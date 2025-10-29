@@ -29,5 +29,5 @@ f <- function(x)
   ms$p[1] * dnorm(x, ms$mean[1], ms$sd[1]) +
   ms$p[2] * dnorm(x, ms$mean[2], ms$sd[2])
 
-p + stat_function(fun = f, color = "red")
+#p + stat_function(fun = f, color = "red")
 
