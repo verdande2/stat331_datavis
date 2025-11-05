@@ -16,6 +16,7 @@ library(ggplot2) # mpg dataset and plotting
 library(reticulate) # for calling python
 library(tigris) # for states data
 library(sf) # simple features
+library(ggrepel) # for repelling labels off of one another
 ```
 
 
@@ -48,20 +49,24 @@ spending_and_pop_data <- left_join(spending_data, pop_data, by = join_by(State))
 # use tigris to do the left join with the shapes
 spending_and_pop_with_shapes <- left_join(tigris::states(), spending_and_pop_data, by = join_by(NAME == State))
 ```
+
 ```{r}
 centroid <- sf::st_centroid
+
 p3 <- spending_and_pop_with_shapes |>
   mutate(`Pop` = as.numeric(`Pop`), `Award Amount` = as.numeric(`Award Amount`)) |> # numeric conversion
   filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) |> # remove Hawaii, Alaska, Guam, etc for now
   ggplot() + 
   #geom_sf(aes(fill=Pop)) +
+  guides(fill = guide_legend(title = "Log Scale of Award/Population", theme(legend.title.position = "top"))) +
   #guides(alpha = "none") + 
   geom_sf(#data = centroid,
-          aes(fill = log(`Award Amount` / `Pop`))
+          aes(fill = log(`Award Amount` / `Pop`), label = "Log scale Amt/Pop")
           #pch = 21,
           #aes(size = Pop),
           #fill = alpha("red", 0.4)
           ) +
-  geom_sf_label(aes(label = STUSPS))
-
-p3
+  #geom_sf_label(aes(label = STUSPS)) +
+  geom_label_repel(stat = "sf_coordinates")
+  
+```
