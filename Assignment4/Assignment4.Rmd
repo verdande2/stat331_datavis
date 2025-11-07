@@ -1,0 +1,80 @@
+<!-- Andrew Sparkes -->
+<!-- STAT331 Assignment 4 - Due 10/31/25 -->
+<!-- In Class "Challenge" -->
+
+<!-- The data provided has outlays from the federal spending, organized by state.   -->
+<!-- The second dataset has state populations.   -->
+
+<!-- Generate a geographic visualization that shows per capita federal expenditures. -->
+---
+title: "STAT331 Data Visualizations and Dashboards - Assignment 4"
+author: "Andrew Sparkes"
+date: "2025-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loadpackages}
+library(tidyverse)
+library(magrittr) # for %>%
+library(ggplot2) # mpg dataset and plotting
+library(reticulate) # for calling python
+library(tigris) # for states data
+library(sf) # simple features
+library(ggrepel) # for repelling labels off of one another
+```
+
+
+```{r loadfile}
+pop_data_path = "State Populations Data.xlsx"
+spending_data_path = "State Awards 2025.xlsx"
+
+
+spending_data <- readxl::read_excel(spending_data_path, skip= 2) |>
+  rename(State = 'State or Territory Name') |>
+  select(State, 'Award Amount') |>
+  mutate(State = str_replace(State, "\\([^()]*\\)", "")) |>
+  mutate(State = str_trim(State))
+
+
+pop_data <- readxl::read_excel(pop_data_path, skip = 5) |>
+  select(1, 2) |> # select State and Pop
+  rename(State = ...1, Pop = `July 1, 2024 (est.)`) |>
+  mutate(State = str_replace(State, "\\([^()]*\\)", "")) |>
+  mutate(State = str_trim(State))
+```
+
+
+```{r}
+# joining on state name, so that population data is mapped to awards data
+spending_and_pop_data <- left_join(spending_data, pop_data, by = join_by(State))
+```
+
+```{r}
+# use tigris to do the left join with the shapes
+spending_and_pop_with_shapes <- left_join(tigris::states(), spending_and_pop_data, by = join_by(NAME == State))
+```
+
+```{r}
+centroid <- sf::st_centroid
+
+p3 <- spending_and_pop_with_shapes |>
+  mutate(`Pop` = as.numeric(`Pop`), `Award Amount` = as.numeric(`Award Amount`)) |> # numeric conversion
+  filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) |> # remove Hawaii, Alaska, Guam, etc for now
+  ggplot() + 
+  #geom_sf(aes(fill=Pop)) +
+  guides(fill = guide_legend(title = "Log Scale of Award/Population", theme(legend.title.position = "top"))) +
+  #guides(alpha = "none") + 
+  geom_sf(#data = centroid,
+          aes(fill = log(`Award Amount` / `Pop`), label = "Log scale Amt/Pop")
+          #pch = 21,
+          #aes(size = Pop),
+          #fill = alpha("red", 0.4)
+          ) +
+  #geom_sf_label(aes(label = STUSPS)) +
+  geom_label_repel(stat = "sf_coordinates")
+  
+```
