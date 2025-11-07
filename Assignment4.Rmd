@@ -1,3 +1,11 @@
+<!-- Andrew Sparkes -->
+<!-- STAT331 Assignment 4 - Due 10/31/25 -->
+<!-- In Class "Challenge" -->
+
+<!-- The data provided has outlays from the federal spending, organized by state.   -->
+<!-- The second dataset has state populations.   -->
+
+<!-- Generate a geographic visualization that shows per capita federal expenditures. -->
 ---
 title: "STAT331 Data Visualizations and Dashboards - Assignment 4"
 author: "Andrew Sparkes"
