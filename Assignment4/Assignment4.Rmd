@@ -58,23 +58,30 @@ spending_and_pop_data <- left_join(spending_data, pop_data, by = join_by(State))
 spending_and_pop_with_shapes <- left_join(tigris::states(), spending_and_pop_data, by = join_by(NAME == State))
 ```
 
-```{r}
-centroid <- sf::st_centroid
-
-p3 <- spending_and_pop_with_shapes |>
+```{r filter_and_prune}
+data_to_plot_w_geo <- spending_and_pop_with_shapes |>
   mutate(`Pop` = as.numeric(`Pop`), `Award Amount` = as.numeric(`Award Amount`)) |> # numeric conversion
-  filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) |> # remove Hawaii, Alaska, Guam, etc for now
+  filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) # remove Hawaii, Alaska, Guam, etc for now
+
+# removing observations with NA values, may revert this later...
+data_to_plot_w_geo <- na.omit(data_to_plot_w_geo)
+```
+
+
+```{r plotting_the_stuff}
+
+
+ploot <- data_to_plot_w_geo |> 
   ggplot() + 
-  #geom_sf(aes(fill=Pop)) +
-  guides(fill = guide_legend(title = "Log Scale of Award/Population", theme(legend.title.position = "top"))) +
-  #guides(alpha = "none") + 
-  geom_sf(#data = centroid,
-          aes(fill = log(`Award Amount` / `Pop`), label = "Log scale Amt/Pop")
-          #pch = 21,
-          #aes(size = Pop),
-          #fill = alpha("red", 0.4)
-          ) +
-  #geom_sf_label(aes(label = STUSPS)) +
-  geom_label_repel(stat = "sf_coordinates")
+  geom_sf(aes(geometry = geometry,
+              fill = log(`Award Amount` / `Pop`),
+              label = "Log Scale Amt/Pop")) +
+  guides(fill = guide_legend(title = "Log Scale of Award/Population",
+                             theme(legend.title.position = "top"))) +
+  geom_label_repel(aes(geometry = geometry),
+                   data = data_to_plot_w_geo,
+                   stat = "sf_coordinates",
+                   label = data_to_plot_w_geo$STUSPS)
   
+ploot
 ```
