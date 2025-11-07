@@ -15,6 +15,7 @@ library(gt)
 # clear out cwd
 rm(list = ls())
 
+# load cars dataset in
 data <- cars
 
 ui <- fluidPage(
