@@ -1,5 +1,5 @@
 ---
-title: "Assignment5"
+title: "Assignment 5"
 author: "Andrew Sparkes"
 date: "2025-11-10"
 output: html_document
@@ -23,3 +23,54 @@ can create the graphs.
 
 *Note:  Both the data format and the graphs on this assignment are pretty difficult to deal with.  Please do your best to match them in format, but some minor alterations 
 may be appropriate.  One of the geom_xxx options used has not been introduced in class and will require some exploration.
+
+
+
+```{r}
+# Load packages
+library(tidyverse)
+library(rmarkdown)
+
+```
+
+```{r}
+render(
+     input = "AutomatedReport.Rmd",
+     output_file = "Alabama.html",
+     params = list(state = "Alabama")
+)
+```
+
+```{r}
+render(
+     input = "AutomatedReport.Rmd",
+     output_file = "Alaska.html",
+     params = list(state = "Alaska")
+)
+```
+
+```{r}
+render(
+     input = "AutomatedReport.Rmd",
+     output_file = "Arizona.html",
+     params = list(state = "Arizona")
+)
+
+
+## Create a vector of all states and the District of Columbia
+#state <- tibble(state.name) %>%
+#     rbind("District of Columbia") %>%
+#     pull(state.name)
+
+## Create a tibble with information on the:
+## input R Markdown document
+## output HTML file
+## parameters needed to knit the document
+#reports <- tibble(
+#     input = "AutomatedReport.Rmd",
+#     output_file = str_glue("{state}.html"),
+#     params = map(state, ~ list(state = .))
+#)
+
+## Generate all of our reports
+#pwalk(reports, render)
