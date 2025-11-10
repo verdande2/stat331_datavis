@@ -1,0 +1,25 @@
+---
+title: "Assignment5"
+author: "Andrew Sparkes"
+date: "2025-11-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment 5
+
+Your task for this assignment will be to use the data provided to create a dynamic report.  
+The example report shows data for NKE, but the dataset has multiple stocks in it.  You need
+to produce two things:
+
+1.  A .R file which can be used to call the report
+2.  A .Rmd file which can use the parameterized report to produce the report you see.  
+
+You do not need the bottom section of the report that gives you an interpretation of the data.  That is present so that you 
+can create the graphs.  
+
+*Note:  Both the data format and the graphs on this assignment are pretty difficult to deal with.  Please do your best to match them in format, but some minor alterations 
+may be appropriate.  One of the geom_xxx options used has not been introduced in class and will require some exploration.
