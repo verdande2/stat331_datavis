@@ -29,7 +29,9 @@ library(tidyverse)
 
 ```
 
-
+```{r loaddata}
+data <- read_csv("homework_5_data.csv")
+```
 
 
 ## Report on the Overall Status of `r params$symbol`
