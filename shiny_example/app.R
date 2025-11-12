@@ -75,47 +75,47 @@ server <- function(input, output, session) {
   })
   
   output$scatter_1 <- renderPlotly({
-    fil <- filtered_data()
-    fig = fil |>
-      plot_ly(
-      x = fil$speed, # using local var fil (and fil$colname) seems better than filtered_data()$colname for x, y
-      y = fil$dist,
-      type = "scatter",
-      mode = "markers"
-    ) |>
-    layout(
-      title = "Car Distance vs Speed",
-      xaxis = list(title = "Speed"),
-      yaxis = list(title = "Distance")
-    )
+    fil <- filtered_data() # alias filtered_data() to fil
+
+    # plot the data speed vs dist, add labels and scatterplot points
+    fig <- ggplot(fil, aes(x = speed, y = dist) ) + 
+      labs(title = "Speed vs Distance", x = "Speed", y = "Distance") + 
+      geom_point()
+    
+    # if the "Fit Regression Line" checkbox is checked, draw the regression line
+    if(input$checkbox_regression){
+      fig <- fig + geom_smooth(method = "loess", formula = "Speed ~ Dist")
+    }
+    
+    # spit out the figure
     fig
   })
   
   output$histogram_1 <- renderPlotly({
-    fig = plot_ly(data = diamonds, x = ~carat, type = "histogram", bingroup = 0.1) |>
-      layout(
-        title = "Diamond weight",
-        xaxis = list(title = "Diamond weight"),
-        yaxis = list(title = "Frequency")
-      )
-    fig
+    fil <- filtered_data()
+    fig <- fil |> ggplot(aes(x = speed)) +
+      geom_histogram()
+
+    ggplotly(fig)
   })
   
-  output$histogram_2 <- renderPlotly({
-    fig = plot_ly(data = diamonds, x = ~carat, type = "histogram", bingroup = 0.1) |>
-      layout(
-        title = "Diamond weight",
-        xaxis = list(title = "Diamond weight"),
-        yaxis = list(title = "Frequency")
-      )
-    fig
-  })
+  # output$histogram_2 <- renderPlotly({
+  #   # fig = plot_ly(data = filtered_data, x = ~dist, type = "histogram", bingroup = 0.1) |>
+  #   #   layout(
+  #   #     title = "Distance Histogram",
+  #   #     xaxis = list(title = "Distance"),
+  #   #     yaxis = list(title = "Frequency")
+  #   #   )
+  #   # fig
+  # })
   
   output$text_correlation_output <- renderText({
-    x <- cor(filtered_data()) # calc corr coeff for speed/dist
+    fil <- filtered_data()
+    x <- cor(fil) # calc corr coeff for speed/dist
     x <- round(x, 3) # truncate off the correlation coeff to 3 decimal places
     paste("The correlation between speed and distance is ", x[2], ".", sep="") # slam together the string with data
   })
+
   
   # on second tab, for filtering debug
   output$filtered_data_table <- renderDataTable(expr = filtered_data())
