@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r loadpackages, echo=FALSE, include=FALSE}
+```{r load_packages, echo=FALSE, include=FALSE}
 library(tidyverse)
 library(readr)
 library(magrittr) # for %>%
