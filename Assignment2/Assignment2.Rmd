@@ -38,7 +38,42 @@ Submit
 
 3.)  A description of the intent of the plot and what the user should get from looking at the plot.
 
-```{r load_dataset}
-MTS <- readr::read_csv("MTS_AgcyInvest_20150331_20250930.csv")
-readr::spec(MTS)
+```{r load_datasets}
+# for now, loading /all/ the data
+MTS_AgcyInvest <- readr::read_csv("MTS_AgcyInvest_20150331_20250930.csv")
+#readr::spec(MTS_AgcyInvest)
+MTS_AgcyIssue <- readr::read_csv("MTS_AgcyIssue_20150331_20250930.csv")
+#readr::spec(MTS_AgcyIssue)
+MTS_AgcySpecIssue <- readr::read_csv("MTS_AgcySpecIssue_20150331_20250930.csv")
+#readr::spec(MTS_AgcySpecIssue)
+MTS_BudsRsltFin <- readr::read_csv("MTS_BudRsltFin_20150331_20250930.csv")
+#readr::spec(MTS_BudsRsltFin)
+MTS_ChgExcsLiab <- readr::read_csv("MTS_ChgExcsLiab_20150331_20250930.csv")
+#readr::spec(MTS_ChgExcsLiab)
+MTS_FinDfctDispSur <- readr::read_csv("MTS_FinDfctDispSur_20150331_20250930.csv")
+#readr::spec(MTS_FinDfctDispSur)
+MTS_GuarDirLoan <- readr::read_csv("MTS_GuarDirLoan_20150331_20250930.csv")
+#readr::spec(MTS_GuarDirLoan)
+MTS_OutlyAgcy <- readr::read_csv("MTS_OutlyAgcy_20150331_20250930.csv")
+#readr::spec(MTS_OutlyAgcy)
+MTS_RcptOutlyDfctSur <- readr::read_csv("MTS_RcptOutlyDfctSur_20150331_20250930.csv")
+#readr::spec(MTS_RcptOutlyDfctSur)
+MTS_RcptOutlyMo <- readr::read_csv("MTS_RcptOutlyMo_20150331_20250930.csv")
+#readr::spec(MTS_RcptOutlyMo)
+MTS_RcptSrc <- readr::read_csv("MTS_RcptSrc_20150331_20250930.csv")
+#readr::spec(MTS_RcptSrc)
+MTS_RcptSrcOutlyAgcy <- readr::read_csv("MTS_RcptSrcOutlyAgcy_20150331_20250930.csv")
+#readr::spec(MTS_RcptSrcOutlyAgcy)
+MTS_RcptSrcOutlyFcn <- readr::read_csv("MTS_RcptSrcOutlyFcn_20150331_20250930.csv")
+#readr::spec(MTS_RcptSrcOutlyFcn)
+MTS_TrustFund <- readr::read_csv("MTS_TrustFund_20150331_20250930.csv")
+#readr::spec(MTS_TrustFund)
+```
+
+
+
+
+```{r cleanup_and_mangle}
+# first, let's figure out what the hell we even want to look at in this enormous dataset
+
 ```
