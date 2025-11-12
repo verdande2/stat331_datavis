@@ -1,0 +1,38 @@
+---
+title: "STAT331 Data Visualizations and Dashboards - Assignment 3"
+author: "Andrew Sparkes"
+date: "2025-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Find your dataset that you plan to use for your project in this course.
+
+Your project will be to create a shiny dashboard, so you will need to identify a dataset that is complex enough that you can create a dashboard with some interesting graphics.
+
+For this assignment, you will create the following.
+
+1.)  Code your own customized theme that you can apply to your graphs in order to standardize their appearance.
+
+2.)  Three (3) different graphs which demonstrate important characteristics of your data.
+These graphs need to follow the best practices described in class.
+
+```{r load_packages, echo=FALSE, include=FALSE}
+library(tidyverse)
+library(magrittr) # for %>%
+library(ggplot2) # mpg dataset and plotting
+library(reticulate) # for calling python
+library(tigris) # for states data
+library(readr)
+library(sf) # simple features
+library(ggrepel) # for repelling labels off of one another
+```
+
+
+
+
+```{r loaddataset}
+MH_Data <- read_csv("Mental_Health_Dataset.csv")
+```
