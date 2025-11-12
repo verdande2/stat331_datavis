@@ -1,0 +1,157 @@
+---
+title: "Visualizations and Dashboards"
+author: "Andrew Sparkes"
+date: "2025-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loadpackages}
+library(tidyverse)
+library(magrittr) # for %>%
+library(ggplot2) # mpg dataset and plotting
+library(reticulate) # for calling python
+```
+
+
+
+```{r loadfile}
+MTS <- read.csv("Z:/code/stat331_datavis/Project1/MTS/MTS_AgcyInvest_20150331_20250930.csv")
+
+MTS_CumSumTransactions <- MTS %>% 
+  filter(`Classification.Description` == "Department of Justice") %>% 
+  select(`Record.Date`, `Classification.Description`, `Current.Month.Net.Transaction.Amount`, `Fiscal.Year.to.Date.Net.Transaction.Amount`) %>% mutate(Cumulative_Transaction = cumsum(`Current.Month.Net.Transaction.Amount`))
+```
+
+
+```
+View(MTS)
+```
+
+
+
+
+```{r}
+library(tidyverse)
+library(sf)
+library(readxl)
+```
+
+
+```{r}
+oregon_shape <- sf::read_sf("MapData/orcntypoly.shp")
+oregon_data <- readxl::read_excel("Oregon Data.xlsx")
+p1 <- oregon_shape %>% 
+  ggplot() + 
+  geom_sf() + 
+  geom_sf_label(data=oregon_shape, aes(label = altName))
+
+p1
+oregon_data
+```
+
+```{r}
+centroid <- sf::st_centroid
+joined <- left_join(oregon_shape, oregon_data, by = c("instName" = "Name"))
+p2 <- joined %>% 
+  ggplot() + 
+  geom_sf(aes(fill=Population, alpha=log(Density))) +
+  guides(alpha = "none") + 
+  geom_sf(data = centroid,
+          pch = 21,
+          aes(size = Population),
+          fill = alpha("red", 0.4))
+
+
+```
+
+
+```{r}
+# clear state
+rm(joined, MTS, MTS_CumSumTransactions, oregon_data, oregon_shape, p1, p2, centroid, theme_custom)
+```
+
+```{r}
+# setup
+library(tigris)
+```
+
+```{r}
+# load xls files
+State_Awards_2025 <- read_excel("State Awards 2025.xlsx", skip= 2) |>
+  rename(State = 'State or Territory Name') |>
+  select(State, 'Award Amount') |>
+  mutate(State = str_replace(State, "\\([^()]*\\)", "")) |>
+  mutate(State = str_trim(State))
+
+State_Populations_Data <- read_excel("State Populations Data.xlsx", skip = 5) |>
+  select(1, 2) |>
+  rename(State = ...1, Pop = `July 1, 2024 (est.)`) |>
+  mutate(State = str_replace(State, "\\([^()]*\\)", "")) |>
+  mutate(State = str_trim(State))
+```
+
+
+```{r}
+# joining on state name, so that population data is mapped to awards data
+States <- left_join(State_Awards_2025, State_Populations_Data, by = join_by(State))
+```
+
+```{r}
+# use tigris to do the left join with the shapes
+States_Shapes_Data <- left_join(tigris::states(), States, by = join_by(NAME == State))
+```
+
+
+```{r}
+centroid <- sf::st_centroid
+p3 <- States_Shapes_Data |>
+  mutate(`Pop` = as.numeric(`Pop`), `Award Amount` = as.numeric(`Award Amount`)) |> # numeric conversion
+  filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) |> # remove Hawaii, Alaska, Guam, etc for now
+  ggplot() + 
+  #geom_sf(aes(fill=Pop)) +
+  #guides(alpha = "none") + 
+  geom_sf(#data = centroid,
+          aes(fill = log(`Award Amount` / `Pop`))
+          #pch = 21,
+          #aes(size = Pop),
+          #fill = alpha("red", 0.4)
+          ) +
+  geom_sf_label(aes(label = STUSPS))
+
+p3
+```
+
+
+
+```{r}
+library(ggrepel)
+```
+
+
+```{r}
+p4 <- States_Shapes_Data |>
+  mutate(`Pop` = as.numeric(`Pop`), `Award Amount` = as.numeric(`Award Amount`)) |> # numeric conversion
+  filter(!(STUSPS %in% c("HI", "AK", "AS", "GU", "VI", "PR", "MP"))) |> # remove Hawaii, Alaska, Guam, etc for now
+  ggplot() + 
+  geom_sf(aes(fill = log(`Award Amount` / `Pop`))) +
+  #geom_sf_label(aes(label = STUSPS)) +
+  geom_label_repel(stat = "sf_coordinates", aes(label = STUSPS, geometry = geometry))
+
+p4
+
+```
+
+
+```{r}
+library(tinytex)
+```
+
+
+```{r}
+# one time setup
+#tinytex::install_tinytex()
+```
