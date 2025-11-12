@@ -30,7 +30,7 @@ library(tidyverse)
 ```
 
 ```{r loaddata}
-data <- read_csv("homework_5_data.csv")
+data <- readr::read_csv("homework_5_data.csv")
 ```
 
 
