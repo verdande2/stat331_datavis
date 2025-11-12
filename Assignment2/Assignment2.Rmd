@@ -39,6 +39,6 @@ Submit
 3.)  A description of the intent of the plot and what the user should get from looking at the plot.
 
 ```{r load_dataset}
-MTS <- read_csv("MTS_AgcyInvest_20150331_20250930.csv")
-
+MTS <- readr::read_csv("MTS_AgcyInvest_20150331_20250930.csv")
+readr::spec(MTS)
 ```
