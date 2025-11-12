@@ -18,6 +18,7 @@ library(reticulate) # for calling python
 library(tigris) # for states data
 library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another
+library(scales) # for comma-tizing the y tick labels
 ```
 
 Using data from the Monthly Treasury Datasets create plots with ggplot2 that meet the following requirements:
@@ -92,10 +93,12 @@ MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
 
 plot1 <- MTS_AgcyInvest_CumSumTrans %>% 
   ggplot() +
-  geom_line(aes(x = Record.Date, y = Cumulative.Transaction)) + 
-  theme_dark() 
-  # TODO rename axis labels
-  #theme(axis.title.x = "Date", axis.title.y = "Current Balance")
+  geom_line(aes(x = Record.Date, y = Cumulative.Transaction, color="red", linewidth = 3)) + 
+  theme_dark() +
+  xlab("Date") +
+  ylab("Current Balance (USD)") +
+  scale_y_continuous(label=comma, limits=c(min(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction), 
+                                           max(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction)))
 
 plot1
 ```
