@@ -76,4 +76,26 @@ MTS_TrustFund <- readr::read_csv("MTS_TrustFund_20150331_20250930.csv")
 ```{r cleanup_and_mangle}
 # first, let's figure out what the hell we even want to look at in this enormous dataset
 
+# let's start with the inclass example, looking at the DoJ's transactions
+MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
+  filter(`Classification Description` == "Department of Justice") %>%
+  select(`Record Date`, `Classification Description`, `Current Month Net Transaction Amount`, `Fiscal Year to Date Net Transaction Amount`)  %>%
+  mutate(Cumulative.Transaction = cumsum(`Current Month Net Transaction Amount`)) %>%
+  rename(Record.Date = `Record Date`) %>% # TODO probably better way to do this in a batch
+  rename(Classification.Description = `Classification Description`) %>%
+  rename(Current.Month.Net.Transaction.Amount = `Current Month Net Transaction Amount`) %>%
+  rename(Fiscal.Year.to.Date.Net.Transaction.Amount = `Fiscal Year to Date Net Transaction Amount`)
+
+```
+
+```{r plot_the_stuff}
+
+plot1 <- MTS_AgcyInvest_CumSumTrans %>% 
+  ggplot() +
+  geom_line(aes(x = Record.Date, y = Cumulative.Transaction)) + 
+  theme_dark() 
+  # TODO rename axis labels
+  #theme(axis.title.x = "Date", axis.title.y = "Current Balance")
+
+plot1
 ```
