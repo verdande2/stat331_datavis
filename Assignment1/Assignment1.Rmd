@@ -1,0 +1,51 @@
+---
+title: "STAT331 Data Visualizations and Dashboards - Assignment 1"
+author: "Andrew Sparkes"
+date: "2025-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loadpackages, echo=FALSE, include=FALSE}
+
+```
+
+
+
+Find a graphic (used for displaying data) in the media, on a webpage, in an academic publication, etc...
+
+![Figure 1. Bad Graph](crime.png)
+
+1.)  Include a picture of the graphic and then critique this graph according to the best practices we described in class.  Make sure to assess the following:
+
+  a.)  Cognitive Load and appropriateness of the context for the required cognitive load
+  
+>This graphic has all kinds of things wrong with it. The cognitive load required is very low, making the graph easy to read, though, not much viable information can be learned from it. 
+    
+  b.)  Clarity
+  
+>Well, in its simplicity, it is somewhat clear as to what the axes represent, and the data plotted, but it does so in a deceitful way by manipulating the y-axis, making the visual difference between the bars not representative of the actual (relatively small) change.
+    
+  c.)  Contrast
+
+>Technically, the graph has reasonable contrast between the two fill colors and the background. I can't state whether they are good choices for colorblind without further analysis. Even considering colorblindness, I feel like the color choice is less important in such a simple, whitespace heavy graph.
+    
+  d.)  Use of text and labels
+  
+>While the axes are labeled, this graph lacks any more meaningful labels and use of text. It lacks a title and caption, and data source attribution. The y-axis is not formatted in a very human-readable manner, just labeling the ticks with unmodified integers.
+    
+  e.)  Choice of geometries and aesthetics
+  
+>The choice of geometry (bar) and aesthetics seem reasonable, though this graph has many other problems, as noted.
+
+2.)  Report of what you would do in order to improve the graphic.
+
+>I'd add a title and caption referencing the context of the data and providing some basic interpretation of the data, ie. Title: "US Crime Rate increase over the period of 2018-2019" and caption: "A plot of [type] of crime rates in the US, data from XYZ." I'd add comma formatting to the tick labels on the y-axis. I'd consider changing from the standard Microsoft Word style colors and perhaps choose a better colorset. While I don't find a bar chart to be entirely unreasonable, if more continuous data was available, a line graph may become a better choice. It's a very simple graph, and doesn't say much at all. I'd try to get better data (as in, more) and try to get some more data points to draw a pattern from. 
+
+
+
+
+
