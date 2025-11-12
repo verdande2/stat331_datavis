@@ -1,0 +1,44 @@
+---
+title: "STAT331 Data Visualizations and Dashboards - Assignment 2"
+author: "Andrew Sparkes"
+date: "2025-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loadpackages, echo=FALSE, include=FALSE}
+library(tidyverse)
+library(readr)
+library(magrittr) # for %>%
+library(ggplot2) # mpg dataset and plotting
+library(reticulate) # for calling python
+library(tigris) # for states data
+library(sf) # simple features
+library(ggrepel) # for repelling labels off of one another
+```
+
+Using data from the Monthly Treasury Datasets create plots with ggplot2 that meet the following requirements:
+
+1.)  You must create 2 plots
+
+2.)  The plots must use two different plot types (boxplot and scatterplot, bar-plot and radar-plot, etc...)
+
+3.)  The plots must encode the data using geometries and aesthetics that follow the best practices that we learned in class.
+
+(You are not required to work with axis labels, titles, customized legends, etc... yet.  We will work on theming next week.)
+
+Submit
+
+1.)  Code
+
+2.)  Plot
+
+3.)  A description of the intent of the plot and what the user should get from looking at the plot.
+
+```{r load_dataset}
+MTS <- read_csv("MTS_AgcyInvest_20150331_20250930.csv")
+
+```
