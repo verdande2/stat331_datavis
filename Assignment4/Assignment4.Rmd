@@ -1,9 +1,9 @@
 <!-- Andrew Sparkes -->
-<!-- STAT331 Assignment 4 - Due 10/31/25 -->
+<!-- STAT331 Assignment 4 -->
 <!-- In Class "Challenge" -->
 
 <!-- The data provided has outlays from the federal spending, organized by state.   -->
-<!-- The second dataset has state populations.   -->
+<!-- The second dataset has state populations. -->
 
 <!-- Generate a geographic visualization that shows per capita federal expenditures. -->
 ---
@@ -68,20 +68,21 @@ data_to_plot_w_geo <- na.omit(data_to_plot_w_geo)
 ```
 
 
-```{r plotting_the_stuff}
-
-
+```{r plotting_the_stuff, fig.width=10, fig.height=7}
 ploot <- data_to_plot_w_geo |> 
   ggplot() + 
   geom_sf(aes(geometry = geometry,
               fill = log(`Award Amount` / `Pop`),
               label = "Log Scale Amt/Pop")) +
-  guides(fill = guide_legend(title = "Log Scale of Award/Population",
-                             theme(legend.title.position = "top"))) +
   geom_label_repel(aes(geometry = geometry),
                    data = data_to_plot_w_geo,
                    stat = "sf_coordinates",
-                   label = data_to_plot_w_geo$STUSPS)
+                   label = data_to_plot_w_geo$STUSPS) +
+  labs(x = "Longitude",
+       y = "Latitude") +
+  theme_classic() +
+  guides(fill = guide_legend(title = "Log Scale of Award/Population",
+                             theme(legend.title.position = "top")))
   
 ploot
 ```
