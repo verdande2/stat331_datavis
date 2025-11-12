@@ -26,7 +26,7 @@ may be appropriate.  One of the geom_xxx options used has not been introduced in
 
 
 
-```{r}
+```{r, load_packages, echo = FALSE, include = FALSE}
 # Load packages
 library(tidyverse)
 library(rmarkdown)
@@ -35,25 +35,25 @@ library(rmarkdown)
 
 ```{r}
 render(
-     input = "AutomatedReport.Rmd",
-     output_file = "Alabama.html",
-     params = list(state = "Alabama")
+     input = "Report.Rmd",
+     output_file = "AAPL.html",
+     params = list(symbol = "AAPL")
 )
 ```
 
 ```{r}
 render(
-     input = "AutomatedReport.Rmd",
-     output_file = "Alaska.html",
-     params = list(state = "Alaska")
+     input = "Report.Rmd",
+     output_file = "DIS.html",
+     params = list(symbol = "DIS")
 )
 ```
 
 ```{r}
 render(
-     input = "AutomatedReport.Rmd",
-     output_file = "Arizona.html",
-     params = list(state = "Arizona")
+     input = "Report.Rmd",
+     output_file = "NKE.html",
+     params = list(symbol = "NKE")
 )
 
 

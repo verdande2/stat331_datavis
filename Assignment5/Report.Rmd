@@ -24,17 +24,28 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r libraries}
+```{r load_packages, echo = FALSE, include = FALSE}
 library(tidyverse)
-
+library(tibble)
+library(dplyr)
 ```
 
-```{r loaddata}
-data <- readr::read_csv("homework_5_data.csv")
+```{r load_dataset}
+data <- readr::read_table("homework_5_data.csv") # read_table because it's whitespace-delimited, ew
+readr::spec(data)
+head(data, 3)
+
+#data_df <- data.frame(data) # adds X. prefix to all column names ... k...
+
 ```
 
 
 ## Report on the Overall Status of `r params$symbol`
+
+```{r clean_and_mangle_data}
+
+
+```
 
 ```{r}
 # line chart of stock price by date
