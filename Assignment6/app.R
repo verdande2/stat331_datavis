@@ -3,7 +3,7 @@
 # out of the shell created in the code.  Upload your app.R code.
 library(shiny)
 library(plotly)
-library(gridlayout)
+# library(gridlayout) # no longer exists
 library(bslib)
 library(DT)
 library(tidyverse)
@@ -13,7 +13,7 @@ library(usmap)
 library(fmsb)
 library(bs4Dash)
 
-# Pre app data and lsit prep ----
+# Pre app data and list prep ----
 map <- us_map()
 
 totals_vec <- c("state.name", "total_cases", "Total Deaths", "Total # Tests")
@@ -24,360 +24,42 @@ per_100000_vec <- c("state.name", "cases_per_100000", "Death Rate per 100000", "
 
 
 #UI ----------------
-ui <- grid_page(
-  # Default Layout ------
-  layout = c(
-    "header  header      header      header     ",
-    "sidebar HilightCard HilightCard HilightCard",
-    "sidebar mapCard     mapCard     radarArea  ",
-    "DataTable DataTable plotly      plotly     "
+ui <- page_sidebar( 
+  title = "COVID Report", 
+  id = "main_page",
+  sidebar = sidebar(
+    varSelectInput("var", "select", mtcars)
   ),
-  row_sizes = c(
-    "90px",
-    "515px",
-    "500px",
-    "780px"
-  ),
-  col_sizes = c(
-    "250px",
-    "0.98fr",
-    "0.77fr",
-    "1.25fr"
-  ),
-  gap_size = "2rem",
   
+  card(
+    full_screen = TRUE,
+    card_header(""),
+    #plotOutput("p")
+  )
+) 
+  # Default Layout ------
+
   ## Header Card --------------
-  grid_card_text(
-    area = "header",
-    content = "COVID Report",
-    alignment = "start",
-    is_title = FALSE
-  ),
+
   
   ## Sidebar Card -------------
-  grid_card(
-    area = "sidebar",
-    card_header("Settings",
-                fileInput(inputId = "upload",
-                          label = "Select Data File",
-                          multiple = FALSE)
-                ),
-    card_body(
-      selectInput(
-        inputId = "myState",
-        label = "Choose State",
-        choices = ""
-      )
-    ),
-    card_footer(
-      downloadButton(
-        outputId = "report",
-        label = "Generate Report"
-      )
-      #actionButton(
-      #  inputId = "reportButton",
-      #  label = "Generate Report"
-      #)
-    )
-  ),
+
   
   ## Tab Card for Value Boxes ---------------
-  grid_card(
-    area = "HilightCard",
-    full_screen = TRUE,
-    card_header("State Highlights"),
-    card_body(
-      tabsetPanel(
-        id = "HighlightsTab",
-        nav_panel(
-          title = "Per 100000",
-          grid_container(
-            layout = c(
-              "valueA1 valueA2",
-              "valueA3 valueA4"
-            ),
-            row_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            col_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            gap_size = "10px",
-            grid_card(
-              area = "valueA1",
-              card_body(
-                value_box(
-                  title = "Cases Per 100,000",
-                  theme = value_box_theme(bg = "#e6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "p100Kcases"),
-                  showcase = bsicons::bs_icon("people-fill")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA3",
-              card_body(
-                value_box(
-                  title = "Death Rate Per 100,000",
-                  theme = value_box_theme(bg = "#f6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "p100Kdeaths"),
-                  showcase = bsicons::bs_icon("emoji-frown")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA2",
-              card_body(
-                value_box(
-                  title = "Tests Per 100,000",
-                  theme = value_box_theme(bg = "#16f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "p100Ktests"),
-                  showcase = bsicons::bs_icon("journals"),
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA4",
-              card_body(
-                value_box(
-                  title = "Tests Per 100,000 - Last 7 Days",
-                  theme = value_box_theme(bg = "#56dddd", fg = "#0B538E"),
-                  value = textOutput(outputId = "p100Ktests7"),
-                  showcase = bsicons::bs_icon("journal-plus"),
-                )
-              )
-            )
-          )
-        ),
-        nav_panel(
-          title = "Totals",
-          grid_container(
-            layout = c(
-              "valueA5 valueA6",
-              "valueA7 valueA8"
-            ),
-            row_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            col_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            gap_size = "10px",
-            grid_card(
-              area = "valueA5",
-              card_body(
-                value_box(
-                  title = "Total Cases",
-                  theme = value_box_theme(bg = "#e6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "totalCases"),
-                  showcase = bsicons::bs_icon("people")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA6",
-              card_body(
-                value_box(
-                  title = "Total % Positive Tests",
-                  theme = value_box_theme(bg = "#16f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "totalPPlus"),
-                  showcase = bsicons::bs_icon("percent"),
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA7",
-              card_body(
-                value_box(
-                  title = "Total Deaths",
-                  theme = value_box_theme(bg = "#f6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "totalDeaths"),
-                  showcase = bsicons::bs_icon("emoji-frown")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA8",
-              card_body(
-                value_box(
-                  title = "Total Tests",
-                  theme = value_box_theme(bg = "#56dddd", fg = "#0B538E"),
-                  value = textOutput(outputId = "totalTests"),
-                  showcase = bsicons::bs_icon("journal-check"),
-                )
-              )
-            )
-          )
-        ),
-        nav_panel(
-          title = "7 Day",
-          grid_container(
-            layout = c(
-              "valueA9 valueA10",
-              "valueA11 valueA12"
-            ),
-            row_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            col_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            gap_size = "10px",
-            grid_card(
-              area = "valueA9",
-              card_body(
-                value_box(
-                  title = "Cases in the last 7 Days",
-                  theme = value_box_theme(bg = "#e6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "cases7"),
-                  showcase = bsicons::bs_icon("people")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA11",
-              card_body(
-                value_box(
-                  title = "Deaths in the last 7 Days",
-                  theme = value_box_theme(bg = "#f6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "deaths7"),
-                  showcase = bsicons::bs_icon("emoji-frown")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA10",
-              card_body(
-                value_box(
-                  title = "Percentage of Positive Tests in Last 7 Days",
-                  theme = value_box_theme(bg = "#16f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "PPos7"),
-                  showcase = bsicons::bs_icon("percent"),
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA12",
-              card_body(
-                value_box(
-                  title = "Total Tests in Last 7 Days",
-                  theme = value_box_theme(bg = "#56dddd", fg = "#0B538E"),
-                  value = textOutput(outputId = "tests7"),
-                  showcase = bsicons::bs_icon("database"),
-                )
-              )
-            )
-          )
-        ),
-        nav_panel(
-          title = "30 Day",
-          grid_container(
-            layout = c(
-              "valueA13 valueA14",
-              "valueA15 .    "
-            ),
-            row_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            col_sizes = c(
-              "1fr",
-              "1fr"
-            ),
-            gap_size = "10px",
-            grid_card(
-              area = "valueA13",
-              card_body(
-                value_box(
-                  title = "Tests per 100,000 in last 30 Days",
-                  theme = value_box_theme(bg = "#f6f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "test100K30"),
-                  showcase = bsicons::bs_icon("database")
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA14",
-              card_body(
-                value_box(
-                  title = "Percentage of Positive Tests in Last 30 Days",
-                  theme = value_box_theme(bg = "#16f2fd", fg = "#0B538E"),
-                  value = textOutput(outputId = "PPos30"),
-                  showcase = bsicons::bs_icon("percent"),
-                )
-              )
-            ),
-            grid_card(
-              area = "valueA15",
-              card_body(
-                value_box(
-                  title = "Total Tests in Last 30 Days",
-                  theme = value_box_theme(bg = "#56dddd", fg = "#0B538E"),
-                  value = textOutput(outputId = "tests30"),
-                  showcase = bsicons::bs_icon("database")
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  ),
+  
   
   ## Map Card --------------------
-  grid_card(
-    area = "mapCard",
-    full_screen = TRUE,
-    card_header("Map"),
-    card_body(
-      plotlyOutput(
-        outputId = "mapPlotly",
-        width = "100%",
-        height = "400px"
-      )
-    )
-  ),
+  
   
   ## Radar Plot Card --------------
-  grid_card(
-    area = "radarArea",
-    full_screen = TRUE,
-    card_header("Multi-aspect Comparison per 100,000"),
-    card_body(plotOutput(outputId = "plotPer100000"))
-  ),
+
   
   ## Data Table Card --------------
-  grid_card(
-    area = "DataTable",
-    full_screen = TRUE,
-    card_header("Data Table"),
-    card_body(DTOutput(outputId = "myTable", width = "100%"))
-  ),
+
   
-  ## Barplot Card -------------
-  grid_card(
-    area = "plotly",
-    card_header(
-      h2(strong("Barplot of Metrics")),
-      selectInput(
-        inputId = "rankInputSelect",
-        label = "Select Metric",
-        choices = ""
-      )
-    ),
-    card_body(
-      plotlyOutput(outputId = "distPlot", width = "100%")
-    ),
-    card_footer()
-  )
-  
-)
+  ## plotly Card -------------
+
+
 
 # Server ----------------
 server <- function(input, output, server) {
