@@ -18,8 +18,8 @@ params:
 knitr::opts_chunk$set(
   # suppress only warnings and messages 
   echo = TRUE,
-  warning = FALSE,
-  message = FALSE
+  warning = TRUE, # for now
+  message = TRUE # for now
 )
 ```
 
@@ -30,7 +30,7 @@ library(tibble)
 library(dplyr)
 ```
 
-```{r load_dataset_and_mangle}
+```{r load_dataset_and_mangle, include = FALSE}
 # first, load in the first row, the df headers
 data_headers <- readr::read_table("homework_5_data.csv", n_max = 1) # read_table because it's whitespace-delimited, ew
 #readr::spec(data_headers)
@@ -56,7 +56,7 @@ data <- as.data.frame(data)
 ## Report on the Overall Status of `r params$symbol`
 
 
-```{r manipulate_some_data}
+```{r manipulate_some_data, include = FALSE}
 # now that the whole dataset has been wrangled, let's filter it down to just the relevant symbol info, then we'll pivot it by the date columns to long format and store for later plotting
 pivoted_data <- data |> 
   filter(`Company`==params$symbol) |>
@@ -72,7 +72,7 @@ df_to_graph <- pivoted_data |>
 ```
 
 
-```{r}
+```{r make_the_line_chart_happen}
 # line chart of stock price by date
 df_to_graph |> ggplot(aes(x = Date, y=Value)) +
   geom_line() + # make pretty line
@@ -83,12 +83,18 @@ df_to_graph |> ggplot(aes(x = Date, y=Value)) +
 
 ```
 
-```{r}
+```{r make_the_financial_ratios_happen, include = FALSE}
 # financial ratios
 
 fin_ratios <- pivoted_data |>
   select(Company, Forward_PE_Ratio, PEG_Ratio, Price_Sales_Ratio, Price_Book_Ratio, EV_REV_Ratio, EV_EBITDA_Ratio) |>
   distinct()
+
+
+```
+
+```{r plot_the_financial_ratios}
+
 ```
 
 
