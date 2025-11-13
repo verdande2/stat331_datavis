@@ -1,3 +1,6 @@
+# This assignment relies on the covid data and the "broken" code presented in the assignments section. 
+# We will be working on this in class.  Your task is to use bs4dash to make an attractive dashboard application
+# out of the shell created in the code.  Upload your app.R code.
 library(shiny)
 library(plotly)
 library(gridlayout)
@@ -8,7 +11,7 @@ library(readr)
 library(scales)
 library(usmap)
 library(fmsb)
-
+library(bs4Dash)
 
 # Pre app data and lsit prep ----
 map <- us_map()
