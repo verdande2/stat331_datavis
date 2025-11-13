@@ -72,8 +72,7 @@ data_to_plot_w_geo <- na.omit(data_to_plot_w_geo)
 ploot <- data_to_plot_w_geo |> 
   ggplot() + 
   geom_sf(aes(geometry = geometry,
-              fill = log(`Award Amount` / `Pop`),
-              label = "Log Scale Amt/Pop")) +
+              fill = log(`Award Amount` / `Pop`))) +
   geom_label_repel(aes(geometry = geometry),
                    data = data_to_plot_w_geo,
                    stat = "sf_coordinates",
@@ -83,6 +82,7 @@ ploot <- data_to_plot_w_geo |>
   theme_classic() +
   guides(fill = guide_legend(title = "Log Scale of Award/Population",
                              theme(legend.title.position = "top")))
-  
+  # TODO add grid lines
+  # TODO change colorbar
 ploot
 ```

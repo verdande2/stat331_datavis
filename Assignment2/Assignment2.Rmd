@@ -39,7 +39,7 @@ Submit
 
 3.)  A description of the intent of the plot and what the user should get from looking at the plot.
 
-```{r load_datasets}
+```{r load_datasets, include = FALSE}
 # for now, loading /all/ the data
 MTS_AgcyInvest <- readr::read_csv("MTS_AgcyInvest_20150331_20250930.csv")
 #readr::spec(MTS_AgcyInvest)
@@ -89,11 +89,11 @@ MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
 
 ```
 
-```{r plot_the_stuff}
+```{r plot_the_stuff_part_one}
 
 plot1 <- MTS_AgcyInvest_CumSumTrans %>% 
   ggplot() +
-  geom_line(aes(x = Record.Date, y = Cumulative.Transaction, color="red", linewidth = 3)) + 
+  geom_line(aes(x = Record.Date, y = Cumulative.Transaction), color="red", linewidth = 3) + # TODO fix this, make it beautiful
   theme_dark() +
   xlab("Date") +
   ylab("Current Balance (USD)") +
@@ -101,4 +101,9 @@ plot1 <- MTS_AgcyInvest_CumSumTrans %>%
                                            max(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction)))
 
 plot1
+```
+
+
+```{r}
+# TODO plot 2
 ```

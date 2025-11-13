@@ -33,11 +33,11 @@ library(ggrepel) # for repelling labels off of one another
 
 
 
-```{r load_dataset}
+```{r load_dataset, include = FALSE}
 MH_Data <- readr::read_csv("Mental_Health_Dataset.csv")
 readr::spec(MH_Data)
 ```
 
-```{r tidy_data}
+```{r tidy_data, include = FALSE}
 
 ```
