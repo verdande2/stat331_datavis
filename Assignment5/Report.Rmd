@@ -78,7 +78,7 @@ df_to_graph |> ggplot(aes(x = Date, y=Value)) +
   geom_line() + # make pretty line
   geom_point() + # add points on actual data points
   labs(x = "Date", y = paste(params$symbol, "Price", sep = " ")) +
-  scale_x_date(date_breaks = "10 day", date_labels =  "%D") +
+  scale_x_date(date_breaks = "10 day", date_labels =  "%D") + # breaks every 10d, with labels YYYY-MM-DD
   theme_dark()
 
 ```
