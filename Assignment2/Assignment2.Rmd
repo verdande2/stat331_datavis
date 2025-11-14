@@ -108,7 +108,7 @@ MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
 # TODO insert more data probing and such here!
 #MTS_GuarDirLoan_CumSums <- 
   MTS_RcptSrcOutlyAgcy |>
-  #filter()
+  filter(`Classification Description` == "Corporation Income Taxes") |>
   group_by(`Classification Description`)
   #filter(Classification.Description == "Department of Education:") |>
   # filter(!is.na(Current.Month.Net.Transaction.Amount))
