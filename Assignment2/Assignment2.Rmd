@@ -95,16 +95,25 @@ MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
 
 ```{r clean_up_and_mangle_part_two}
 # let's poke around the MTS_GuardDirLoan dataset for anything interesting
-colnames(MTS_GuarDirLoan) <- str_replace_all(colnames(MTS_GuarDirLoan), " ", ".") # TODO FUCK YOU Fix me, replace spaces with periods
-MTS_GuarDirLoan_CumSums <- MTS_GuarDirLoan |>
-  filter(Classification.Description == "Department of Education:") |>
-  filter(!is.na(Current.Month.Net.Transaction.Amount)) |>
-  select(`Record.Date`, `Classification.Description`, `Current.Month.Net.Transaction.Amount`, `Fiscal.Year.to.Date.Net.Transaction.Amount`)
+#colnames(MTS_GuarDirLoan) <- str_replace_all(colnames(MTS_GuarDirLoan), " ", ".") # TODO FUCK YOU Fix me, replace spaces with periods
+#
+# MTS_GuarDirLoan_CumSums <- MTS_GuarDirLoan |>
+#   filter(Classification.Description == "Department of Education:") |>
+#   filter(!is.na(Current.Month.Net.Transaction.Amount)) |>
+#   select(`Record.Date`, `Classification.Description`, `Current.Month.Net.Transaction.Amount`, `Fiscal.Year.to.Date.Net.Transaction.Amount`)
 
 # DoE is full of null data, yay!
 # let's try something else...
 
 # TODO insert more data probing and such here!
+#MTS_GuarDirLoan_CumSums <- 
+  MTS_RcptSrcOutlyAgcy |>
+  #filter()
+  group_by(`Classification Description`)
+  #filter(Classification.Description == "Department of Education:") |>
+  # filter(!is.na(Current.Month.Net.Transaction.Amount))
+  #select(`Record.Date`, `Classification.Description`, `Current.Month.Net.Transaction.Amount`, `Fiscal.Year.to.Date.Net.Transaction.Amount`)
+
 
   #mutate(Cumulative.Transaction = cumsum(`Current.Month.Net.Transaction.Amount`)) 
   #rename(Record.Date = `Record Date`) %>% # TODO probably better way to do this in a batch
