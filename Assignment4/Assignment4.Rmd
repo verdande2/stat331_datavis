@@ -19,6 +19,10 @@ library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another
 ```
 
+```{r settings}
+options(tigris_use_cache = TRUE)
+```
+
 ## Assignment 4
 
 
