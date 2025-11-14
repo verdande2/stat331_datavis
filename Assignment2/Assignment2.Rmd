@@ -21,6 +21,9 @@ library(ggrepel) # for repelling labels off of one another
 library(scales) # for comma-tizing the y tick labels
 ```
 
+## Assignment 2
+
+
 Using data from the Monthly Treasury Datasets create plots with ggplot2 that meet the following requirements:
 
 1.)  You must create 2 plots

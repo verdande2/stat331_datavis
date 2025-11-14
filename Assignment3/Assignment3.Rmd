@@ -8,6 +8,9 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Assignment 3
+
 Find your dataset that you plan to use for your project in this course.
 
 Your project will be to create a shiny dashboard, so you will need to identify a dataset that is complex enough that you can create a dashboard with some interesting graphics.
