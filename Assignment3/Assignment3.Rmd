@@ -30,7 +30,9 @@ library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another
 ```
 
-
+```{r futzing_with_custom_theme}
+# TODO custom theme()
+```
 
 
 ```{r load_dataset, include = FALSE}
@@ -38,6 +40,23 @@ MH_Data <- readr::read_csv("Mental_Health_Dataset.csv")
 readr::spec(MH_Data)
 ```
 
-```{r tidy_data, include = FALSE}
+```{r mangle_data_part_one, include = FALSE}
+# TODO do me!
+```
 
+```{r mangle_data_part_two, include = FALSE}
+# TODO do me!
+```
+
+```{r mangle_data_part_three, include = FALSE}
+# TODO do me!
+```
+
+```{r plot_one}
+```
+
+```{r plot_two}
+```
+
+```{r plot_three}
 ```

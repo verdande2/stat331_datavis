@@ -1,11 +1,3 @@
-<!-- Andrew Sparkes -->
-<!-- STAT331 Assignment 4 -->
-<!-- In Class "Challenge" -->
-
-<!-- The data provided has outlays from the federal spending, organized by state.   -->
-<!-- The second dataset has state populations. -->
-
-<!-- Generate a geographic visualization that shows per capita federal expenditures. -->
 ---
 title: "STAT331 Data Visualizations and Dashboards - Assignment 4"
 author: "Andrew Sparkes"
@@ -27,8 +19,14 @@ library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another
 ```
 
+The data provided has outlays from the federal spending, organized by state.
+The second dataset has state populations.
+
+Generate a geographic visualization that shows per capita federal expenditures.
 
 ```{r loadfile}
+# TODO add code block descriptions, update code block chunk names!
+
 pop_data_path = "State Populations Data.xlsx"
 spending_data_path = "State Awards 2025.xlsx"
 

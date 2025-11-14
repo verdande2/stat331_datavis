@@ -1,5 +1,5 @@
 ---
-title: "Assignment 5"
+title: "STAT331 Data Visualizations and Dashboards - Assignment 5"
 author: "Andrew Sparkes"
 date: "2025-11-10"
 output: html_document
@@ -33,6 +33,7 @@ library(rmarkdown)
 
 ```
 
+# TODO make this more ... programmatic... I'm a damn programmer, after all. Three manual calls is ... barbaric...
 ```{r}
 render(
      input = "Report.Rmd",
@@ -56,6 +57,8 @@ render(
      params = list(symbol = "NKE")
 )
 ```
+
+# TODO take look at below excerpt and possibly use logic for above?
 
 ## Create a vector of all states and the District of Columbia
 #state <- tibble(state.name) %>%

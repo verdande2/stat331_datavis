@@ -41,6 +41,7 @@ Submit
 
 ```{r load_datasets, include = FALSE}
 # for now, loading /all/ the data
+# TODO cleanup this crap
 MTS_AgcyInvest <- readr::read_csv("MTS_AgcyInvest_20150331_20250930.csv")
 #readr::spec(MTS_AgcyInvest)
 MTS_AgcyIssue <- readr::read_csv("MTS_AgcyIssue_20150331_20250930.csv")
@@ -100,6 +101,8 @@ MTS_GuarDirLoan_CumSums <- MTS_GuarDirLoan |>
 # DoE is full of null data, yay!
 # let's try something else...
 
+# TODO insert more data probing and such here!
+
   #mutate(Cumulative.Transaction = cumsum(`Current.Month.Net.Transaction.Amount`)) 
   #rename(Record.Date = `Record Date`) %>% # TODO probably better way to do this in a batch
   #rename(Classification.Description = `Classification Description`) %>%
@@ -110,7 +113,7 @@ MTS_GuarDirLoan_CumSums <- MTS_GuarDirLoan |>
 
 
 ```{r plot_the_stuff_part_one}
-
+# plotting a variation of the inclass example
 plot1 <- MTS_AgcyInvest_CumSumTrans %>% 
   ggplot() +
   geom_line(aes(x = Record.Date, y = Cumulative.Transaction)) + # TODO fix this, make it beautiful
@@ -130,7 +133,7 @@ plot1
 
 
 ```{r plot_the_things_part_two_electric_boogaloo}
-# plot 2
+# plot 2 TODO do me!
 plot2 <- MTS_AgcyInvest_CumSumTrans %>% 
   ggplot() +
   geom_line(aes(x = Record.Date, y = Cumulative.Transaction), color="red", linewidth = 3) + # TODO fix this, make it beautiful
