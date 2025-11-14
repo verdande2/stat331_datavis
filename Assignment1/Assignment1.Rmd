@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load_packages, echo=FALSE, include=FALSE}
-
+# no packages for this one!
 ```
 
 
@@ -44,8 +44,3 @@ Find a graphic (used for displaying data) in the media, on a webpage, in an acad
 2.)  Report of what you would do in order to improve the graphic.
 
 >I'd add a title and caption referencing the context of the data and providing some basic interpretation of the data, ie. Title: "US Crime Rate increase over the period of 2018-2019" and caption: "A plot of [type] of crime rates in the US, data from XYZ." I'd add comma formatting to the tick labels on the y-axis. I'd consider changing from the standard Microsoft Word style colors and perhaps choose a better colorset. While I don't find a bar chart to be entirely unreasonable, if more continuous data was available, a line graph may become a better choice. It's a very simple graph, and doesn't say much at all. I'd try to get better data (as in, more) and try to get some more data points to draw a pattern from. 
-
-
-
-
-
