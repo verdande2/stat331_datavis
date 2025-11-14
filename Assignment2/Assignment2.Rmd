@@ -89,21 +89,60 @@ MTS_AgcyInvest_CumSumTrans <- MTS_AgcyInvest %>%
 
 ```
 
+```{r clean_up_and_mangle_part_two}
+# let's poke around the MTS_GuardDirLoan dataset for anything interesting
+colnames(MTS_GuarDirLoan) <- str_replace_all(colnames(MTS_GuarDirLoan), " ", ".") # TODO FUCK YOU Fix me, replace spaces with periods
+MTS_GuarDirLoan_CumSums <- MTS_GuarDirLoan |>
+  filter(Classification.Description == "Department of Education:") |>
+  filter(!is.na(Current.Month.Net.Transaction.Amount)) |>
+  select(`Record.Date`, `Classification.Description`, `Current.Month.Net.Transaction.Amount`, `Fiscal.Year.to.Date.Net.Transaction.Amount`)
+
+# DoE is full of null data, yay!
+# let's try something else...
+
+  #mutate(Cumulative.Transaction = cumsum(`Current.Month.Net.Transaction.Amount`)) 
+  #rename(Record.Date = `Record Date`) %>% # TODO probably better way to do this in a batch
+  #rename(Classification.Description = `Classification Description`) %>%
+  #rename(Current.Month.Net.Transaction.Amount = `Current Month Net Transaction Amount`) %>%
+  #rename(Fiscal.Year.to.Date.Net.Transaction.Amount = `Fiscal Year to Date Net Transaction Amount`)
+
+```
+
+
 ```{r plot_the_stuff_part_one}
 
 plot1 <- MTS_AgcyInvest_CumSumTrans %>% 
   ggplot() +
-  geom_line(aes(x = Record.Date, y = Cumulative.Transaction), color="red", linewidth = 3) + # TODO fix this, make it beautiful
+  geom_line(aes(x = Record.Date, y = Cumulative.Transaction)) + # TODO fix this, make it beautiful
+  geom_point(aes(x=Record.Date, y=Cumulative.Transaction)) + # add actual data points to plot
   theme_dark() +
   xlab("Date") +
   ylab("Current Balance (USD)") +
   scale_y_continuous(label=comma, limits=c(min(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction), 
-                                           max(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction)))
+                                           max(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction))) +
+  scale_x_date(date_minor_breaks = "3 month", date_labels = "%b %Y") +
+  labs(title="Account Balance for the DOJ",
+       subtitle = "From 2017 to Current",
+       caption="Monthly Treasury Statement Dataset")
 
 plot1
 ```
 
 
-```{r}
-# TODO plot 2
+```{r plot_the_things_part_two_electric_boogaloo}
+# plot 2
+plot2 <- MTS_AgcyInvest_CumSumTrans %>% 
+  ggplot() +
+  geom_line(aes(x = Record.Date, y = Cumulative.Transaction), color="red", linewidth = 3) + # TODO fix this, make it beautiful
+  geom_point(aes(x=Record.Date, y=Cumulative.Transaction)) + # add actual data points to plot
+  theme_dark() +
+  xlab("Date") +
+  ylab("Current Balance (USD)") +
+  scale_y_continuous(label=comma, limits=c(min(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction), 
+                                           max(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction))) +
+  labs(title="Account Balance for the DOJ",
+       subtitle = "From 2017 to Current",
+       caption="Monthly Treasury Statement Dataset")
+
+plot2
 ```
