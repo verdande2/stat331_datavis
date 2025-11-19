@@ -64,7 +64,6 @@ ui <- page_sidebar(
 
 ## Tab Card for Value Boxes ---------------
 # grid_card(
-#   area = "HilightCard",
 #   full_screen = TRUE,
 #   card_header("State Highlights"),
 #   card_body(
