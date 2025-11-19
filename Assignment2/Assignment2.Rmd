@@ -130,7 +130,7 @@ plot1 <- MTS_AgcyInvest_CumSumTrans %>%
   ggplot() +
   geom_line(aes(x = Record.Date, y = Cumulative.Transaction)) + # TODO fix this, make it beautiful
   geom_point(aes(x=Record.Date, y=Cumulative.Transaction)) + # add actual data points to plot
-  theme_dark() +
+  theme_dark() + # TODO Customize me!
   xlab("Date") +
   ylab("Current Balance (USD)") +
   scale_y_continuous(label=comma, limits=c(min(MTS_AgcyInvest_CumSumTrans$Cumulative.Transaction), 
