@@ -94,7 +94,14 @@ fin_ratios <- pivoted_data |>
 ```
 
 ```{r plot_the_financial_ratios}
+# first plot is PE ratio and EV_EBITDA
+# will need to determine min and max for plot below
+things_to_plot <- c("Forward PE Ratio", "EV/EBITDA Ratio")
 
+PE_EV_plot <- pivoted_data |> 
+  ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
+  geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
+  theme_dark()
 ```
 
 
