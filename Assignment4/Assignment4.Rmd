@@ -5,6 +5,14 @@ date: "2025-10-23"
 output: html_document
 ---
 
+## Assignment 4
+
+
+The data provided has outlays from the federal spending, organized by state.
+The second dataset has state populations.
+
+Generate a geographic visualization that shows per capita federal expenditures.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -17,23 +25,14 @@ library(reticulate) # for calling python
 library(tigris) # for states data
 library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another
+library(scales) # label_comma
 ```
 
 ```{r settings}
 options(tigris_use_cache = TRUE)
 ```
 
-## Assignment 4
-
-
-The data provided has outlays from the federal spending, organized by state.
-The second dataset has state populations.
-
-Generate a geographic visualization that shows per capita federal expenditures.
-
 ```{r loadfile}
-# TODO add code block descriptions, update code block chunk names!
-
 pop_data_path = "State Populations Data.xlsx"
 spending_data_path = "State Awards 2025.xlsx"
 
@@ -85,9 +84,15 @@ ploot <- data_to_plot_w_geo |>
   labs(x = "Longitude",
        y = "Latitude") +
   theme_classic() +
-  guides(fill = guide_legend(title = "Log Scale of Award/Population",
-                             theme(legend.title.position = "top")))
-  # TODO add grid lines
-  # TODO change colorbar
+  scale_fill_viridis_c(
+    option = "mako",
+    name = "Log Scale of Award/Population"
+  ) +
+  guides(
+    fill = guide_colourbar(
+      title.position = "top", # Position the title above the bar
+      title.hjust = 0.5,      # Center the title
+    )
+  )
 ploot
 ```
