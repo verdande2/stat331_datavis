@@ -12,6 +12,7 @@ library(scales)
 library(usmap)
 library(fmsb)
 library(bs4Dash)
+library(shinydashboard)
 
 # Pre app data and list prep ----
 map <- us_map()
@@ -23,41 +24,129 @@ per_100000_vec <- c("state.name", "cases_per_100000", "Death Rate per 100000", "
 
 # UI ----------------
 # Default Layout ------
-ui <- page_sidebar(
-  title = "COVID Report",
-  id = "main_page",
-
-
+ui <- dashboardPage(
+  dashboardHeader(
+    title = "COVID Report"
+  ),
   ## Sidebar Card -------------
-  sidebar = sidebar(
-    card(
-      card_header("Data Select"),
-      varSelectInput("var", "select", mtcars)
-    ),
-    card(
-      card_header("Settings"),
-      fileInput(
-        inputId = "upload",
-        label = "Select Data File",
-        multiple = FALSE
+  dashboardSidebar(
+    fluidRow(
+      card(
+        card_header("Data Select"),
+        varSelectInput("var", "select", mtcars)
       ),
-      selectInput(
-        inputId = "myState",
-        label = "Choose State",
-        choices = ""
-      ),
-      downloadButton(
-        outputId = "report",
-        label = "Generate Report"
+      card(
+        card_header("Settings"),
+        fileInput(
+          inputId = "upload",
+          label = "Select Data File",
+          multiple = FALSE
+        ),
+        selectInput(
+          inputId = "myState",
+          label = "Choose State",
+          choices = ""
+        ),
+        downloadButton(
+          outputId = "report",
+          label = "Generate Report"
+        )
       )
     )
   ),
-
-  ## Header Card --------------
-  card(
-    full_screen = TRUE,
-    card_header("")
-    # plotOutput("p")
+  dashboardBody(
+    fluidRow(
+      tabBox(
+        title = "State Highlights",
+        id = "highlights",
+        tabPanel(
+          "Per 100,000",
+          fluidRow(
+            infoBox(
+              "Cases Per 100,000",
+              textOutput(outputId = "p100Kcases")
+            ),
+            infoBox(
+              "Tests Per 100,000",
+              textOutput(outputId = "p100Ktests")
+            )
+          ),
+          fluidRow(
+            infoBox(
+              "Death Rate Per 100,000",
+              textOutput(outputId = "p100Kdeaths")
+            ),
+            infoBox(
+              "Tests Per 100,000 - Last 7 Days",
+              textOutput(outputId = "p100Ktests7")
+            )
+          )
+        ),
+        tabPanel(
+          "Totals",
+          fluidRow(
+            infoBox(
+              "Total Cases",
+              textOutput(outputId = "totalCases")
+            ),
+            infoBox(
+              "Total % Positive Tests",
+              textOutput(outputId = "totalPPlus")
+            )
+          ),
+          fluidRow(
+            infoBox(
+              "Total Deaths",
+              textOutput(outputId = "totalDeaths")
+            ),
+            infoBox(
+              "Total Tests",
+              textOutput(outputId = "totalTests")
+            )
+          )
+        ),
+        tabPanel(
+          "7 day",
+          fluidRow(
+            infoBox(
+              "Cases in the last 7 Days",
+              textOutput(outputId = "cases7")
+            ),
+            infoBox(
+              "Deaths in the last 7 Days",
+              textOutput(outputId = "deaths7")
+            )
+          ),
+          fluidRow(
+            infoBox(
+              "Percentage of Positive Tests in Last 7 Days",
+              textOutput(outputId = "PPos7")
+            ),
+            infoBox(
+              "Total Tests in Last 7 Days",
+              textOutput(outputId = "tests7")
+            )
+          )
+        ),
+        tabPanel(
+          "30 day",
+          fluidRow(
+            infoBox(
+              "Tests per 100,000 in last 30 Days",
+              textOutput(outputId = "test100K30")
+            ),
+            infoBox(
+              "Percentage of Positive Tests in Last 30 Days",
+              textOutput(outputId = "PPos30")
+            )
+          ),
+          fluidRow(infoBox(
+            "Total Tests in Last 30 Days",
+            textOutput(outputId = "tests30")
+          ))
+        )
+      )
+    )
   )
 )
 
@@ -177,6 +266,7 @@ ui <- page_sidebar(
 #             area = "valueA15",
 #               "Total Tests in Last 30 Days",
 #               textOutput(outputId = "tests30"
+
 
 ## Map Card --------------------
 
