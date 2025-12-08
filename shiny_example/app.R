@@ -70,27 +70,27 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   filtered_data <- reactive({
-    data |> 
+    data |>
       filter(speed >= input$slider_speed[1] & speed <= input$slider_speed[2]) # filter data in interval
   })
-  
+
   output$scatter_1 <- renderPlotly({
     fil <- filtered_data() # alias filtered_data() to fil
 
     # plot the data speed vs dist, add labels and scatterplot points
-    fig <- ggplot(fil, aes(x = speed, y = dist) ) + 
-      labs(title = "Speed vs Distance", x = "Speed", y = "Distance") + 
+    fig <- ggplot(fil, aes(x = speed, y = dist) ) +
+      labs(title = "Speed vs Distance", x = "Speed", y = "Distance") +
       geom_point()
-    
+
     # if the "Fit Regression Line" checkbox is checked, draw the regression line
     if(input$checkbox_regression){
       fig <- fig + geom_smooth(method = "loess", formula = "Speed ~ Dist")
     }
-    
+
     # spit out the figure
     fig
   })
-  
+
   output$histogram_1 <- renderPlotly({
     fil <- filtered_data()
     fig <- fil |> ggplot(aes(x = speed)) +
@@ -98,7 +98,7 @@ server <- function(input, output, session) {
 
     ggplotly(fig)
   })
-  
+
   # output$histogram_2 <- renderPlotly({
   #   # fig = plot_ly(data = filtered_data, x = ~dist, type = "histogram", bingroup = 0.1) |>
   #   #   layout(
@@ -108,7 +108,7 @@ server <- function(input, output, session) {
   #   #   )
   #   # fig
   # })
-  
+
   output$text_correlation_output <- renderText({
     fil <- filtered_data()
     x <- cor(fil) # calc corr coeff for speed/dist
@@ -116,10 +116,10 @@ server <- function(input, output, session) {
     paste("The correlation between speed and distance is ", x[2], ".", sep="") # slam together the string with data
   })
 
-  
+
   # on second tab, for filtering debug
   output$filtered_data_table <- renderDataTable(expr = filtered_data())
 }
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
