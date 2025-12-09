@@ -14,7 +14,6 @@ library(tidyverse)
 library(readr)
 library(magrittr) # for %>%
 library(ggplot2) # mpg dataset and plotting
-library(reticulate) # for calling python
 library(tigris) # for states data
 library(sf) # simple features
 library(ggrepel) # for repelling labels off of one another

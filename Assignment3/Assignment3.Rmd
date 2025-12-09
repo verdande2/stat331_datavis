@@ -26,7 +26,6 @@ These graphs need to follow the best practices described in class.
 library(tidyverse)
 library(magrittr) # for %>%
 library(ggplot2) # mpg dataset and plotting
-library(reticulate) # for calling python
 library(tigris) # for states data
 library(readr)
 library(sf) # simple features
