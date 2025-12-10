@@ -28,6 +28,8 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(tibble)
 library(dplyr)
+library(ggplot2)
+library(ggstance)
 ```
 
 ```{r load_dataset_and_mangle, include = FALSE}
@@ -99,12 +101,50 @@ fin_ratios <- pivoted_data |>
 things_to_plot <- c("Forward PE Ratio", "EV/EBITDA Ratio")
 
 # TODO first plot
-PE_EV_plot <- pivoted_data |>
-  filter(Company == params$symbol) |>
-  ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
-  #geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
-  #geom_point()
-  theme_dark()
+# PE_EV_plot <- pivoted_data |>
+#   filter(Company == params$symbol) |>
+#   ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
+#   #geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
+#   #geom_point()
+#   theme_dark()
+#   
+df <- data.frame(
+  id    = factor(c("A", "B", "C")),
+  min   = c(2, 4, 6),
+  value = c(5, 7, 9),
+  max   = c(8, 10, 12)
+)
+
+# Build the plot
+ggplot(
+  df,
+       aes(y = id)
+       ) +
+  
+  # Box spanning min to max
+  geom_rect(
+    aes(
+      xmin = min,
+        xmax = max,
+                ymin = as.numeric(id) - 0.3,
+                ymax = as.numeric(id) + 0.3),
+            fill = "lightgray",
+    color = "darkgray") +
+  
+  # Horizontal pointrange for min → max with a point at value
+  geom_pointrangeh(
+    aes(
+      x = value,
+      xmin = min,
+      xmax = max),
+                   size = 1.1,
+                   color = "blue") +
+  
+  labs(x = "Value",
+       y = "Group",
+       title = "Example of geom_pointrangeh with min–value–max"
+       ) +
+  theme_minimal()
 ```
 
 
