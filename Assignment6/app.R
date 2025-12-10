@@ -32,10 +32,6 @@ ui <- dashboardPage(
   dashboardSidebar(
     fluidRow(
       card(
-        card_header("Data Select"),
-        varSelectInput("var", "select", mtcars)
-      ),
-      card(
         card_header("Settings"),
         fileInput(
           inputId = "upload",
@@ -55,6 +51,8 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    style = "padding: 15px 15px !important; margin: 15px 15px !important;",
+    ## Sidebar Card -------------
     fluidRow(
       tabBox(
         title = "State Highlights",
@@ -140,147 +138,50 @@ ui <- dashboardPage(
               textOutput(outputId = "PPos30")
             )
           ),
-          fluidRow(infoBox(
-            "Total Tests in Last 30 Days",
-            textOutput(outputId = "tests30")
-          ))
+          fluidRow(
+            infoBox(
+              "Total Tests in Last 30 Days",
+              textOutput(outputId = "tests30")
+            )
+          )
         )
+      )
+    ),
+    fluidRow(
+      ## Map Card --------------------
+      box(
+        title = "Map",
+        plotlyOutput(
+          outputId = "mapPlotly",
+          width = "100%",
+          height = "400px"
+        )
+      ),
+      ## Radar Plot Card --------------
+      box(
+        title = "Multi-aspect Comparison per 100k",
+        plotOutput(outputId = "plotPer100000")
+      )
+    ),
+    fluidRow(
+      ## Data Table Card --------------
+      box(
+        title = "Data Table",
+        DTOutput(outputId = "myTable", width = "100%")
+      ),
+      ## plotly Card -------------
+      box(
+        title = "Barplot of Metrics",
+        selectInput(
+          inputId = "rankInputSelect",
+          label = "Select Metric",
+          choices = ""
+        ),
+        plotlyOutput(outputId = "distPlot", width = "100%")
       )
     )
   )
 )
-
-
-## Tab Card for Value Boxes ---------------
-# grid_card(
-#   full_screen = TRUE,
-#   card_header("State Highlights"),
-#   card_body(
-#     tabsetPanel(
-#       id = "HighlightsTab",
-#       nav_panel(
-#         title = "Per 100000",
-#         grid_container(
-#           layout = c(
-#             "valueA1 valueA2",
-#             "valueA3 valueA4"
-#           ),
-#           grid_card(
-#             area = "valueA1",
-#             card_body(
-#               "Cases Per 100,000",
-#               textOutput(outputId = "p100Kcases"),
-#           grid_card(
-#             area = "valueA3",
-#             card_body(
-#               value_box(
-#                 title = "Death Rate Per 100,000",
-#                 theme = value_box_theme(bg = "#f6f2fd", fg = "#0B538E"),
-#                 value = textOutput(outputId = "p100Kdeaths"),
-#                 showcase = bsicons::bs_icon("emoji-frown")
-#               )
-#             )
-#           ),
-#           grid_card(
-#             area = "valueA2",
-#             card_body(
-#               value_box(
-#                 title = "Tests Per 100,000",
-#                 theme = value_box_theme(bg = "#16f2fd", fg = "#0B538E"),
-#                 value = textOutput(outputId = "p100Ktests"),
-#                 showcase = bsicons::bs_icon("journals"),
-#               )
-#             )
-#           ),
-#           grid_card(
-#             area = "valueA4",
-#             card_body(
-#               "Tests Per 100,000 - Last 7 Days",
-#                 textOutput(outputId = "p100Ktests7"),
-#       nav_panel(
-#         title = "Totals",
-#         grid_container(
-#           layout = c(
-#             "valueA5 valueA6",
-#             "valueA7 valueA8"
-#           ),
-#
-#           grid_card(
-#             area = "valueA5",
-#             title = "Total Cases"
-#                 textOutput(outputId = "totalCases"),
-#           grid_card(
-#             area = "valueA6",
-#                 title = "Total % Positive Tests",
-#                 textOutput(outputId = "totalPPlus"),
-#           grid_card(
-#             area = "valueA7",
-#             title = "Total Deaths"
-#             textOutput(outputId = "totalDeaths"),
-#           grid_card(
-#             area = "valueA8",
-#             title = "Total Tests",
-#             textOutput(outputId = "totalTests"),
-#       ),
-#       nav_panel(
-#         title = "7 Day",
-#         grid_container(
-#           layout = c(
-#             "valueA9 valueA10",
-#             "valueA11 valueA12"
-#           ),
-#           grid_card(
-#             area = "valueA9",
-#             card_body(
-#               "Cases in the last 7 Days",
-#               textOutput(outputId = "cases7"),
-#           grid_card(
-#             area = "valueA11",
-#             "Deaths in the last 7 Days",
-#             textOutput(outputId = "deaths7"),
-#           grid_card(
-#             area = "valueA10",
-#                 "Percentage of Positive Tests in Last 7 Days",
-#                 textOutput(outputId = "PPos7")
-#           grid_card(
-#             area = "valueA12",
-#             "Total Tests in Last 7 Days",
-#             textOutput(outputId = "tests7"),
-#       nav_panel(
-#         title = "30 Day",
-#         grid_container(
-#           layout = c(
-#             "valueA13 valueA14",
-#             "valueA15 .    "
-#           ),
-#           grid_card(
-#             area = "valueA13",
-#             title = "Tests per 100,000 in last 30 Days"
-#                 textOutput(outputId = "test100K30"),
-#           grid_card(
-#               value_box(
-#                 title = "Percentage of Positive Tests in Last 30 Days",
-#                 textOutput(outputId = "PPos30"),
-#           ),
-#           grid_card(
-#             area = "valueA15",
-#               "Total Tests in Last 30 Days",
-#               textOutput(outputId = "tests30"
-
-
-## Map Card --------------------
-
-
-## Radar Plot Card --------------
-
-
-## Data Table Card --------------
-
-
-## plotly Card 1 -------------
-
-
-## plotly Card 2 -------------
 
 
 # Server ----------------
@@ -326,14 +227,13 @@ server <- function(input, output, server) {
 
 
   # Generate Report Button Event ----
-  # observeEvent(input$reportButton,
-  #              {
-  #                rmarkdown::render(
-  #                  input = "AutomatedReport.Rmd",
-  #                  output_file = paste0(input$myState, ".html"),
-  #                  params = list(state = input$myState)
-  #                )
-  #              })
+  observeEvent(input$report, {
+    rmarkdown::render(
+      input = "AutomatedReport.Rmd",
+      output_file = paste0(input$myState, ".html"),
+      params = list(state = input$myState)
+    )
+  })
 
   output$report <- downloadHandler(
     filename = function() {
@@ -349,7 +249,7 @@ server <- function(input, output, server) {
       )
       rmarkdown::render(tempReport,
         output_file = file,
-        params = params,
+        params = params, # Warning: Error in knit_params_get: render params not declared in YAML: cases, filter TODO WTF
         envir = new.env(parent = globalenv())
       )
     }
