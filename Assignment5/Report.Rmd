@@ -16,7 +16,7 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  # suppress only warnings and messages 
+  # suppress only warnings and messages
   echo = TRUE,
   warning = TRUE, # for now
   message = TRUE # for now
@@ -35,14 +35,13 @@ library(ggstance)
 ```{r load_dataset_and_mangle, include = FALSE}
 # first, load in the first row, the df headers
 data_headers <- readr::read_table("homework_5_data.csv", n_max = 1) # read_table because it's whitespace-delimited, ew
-#readr::spec(data_headers)
+# readr::spec(data_headers)
 
 # read remainder of the data, skipping the header row and the partially blank 2nd row
 data <- readr::read_table("homework_5_data.csv", skip = 2, col_names = as.character(colnames(data_headers))) |>
   select(-1) # select all but first col (drop the unnamed id col) NOTE: select() drops the table spec, so it loses the col names...
-#readr::spec(data) # returns NULL... TODO look into this behavior
+# readr::spec(data) # returns NULL... TODO look into this behavior
 
-  
 
 # set the col names of the dataset to the headers extracted above, removing the double quotes
 colnames(data) <- gsub("\"", "", colnames(data_headers), fixed = TRUE)
@@ -60,29 +59,28 @@ data <- as.data.frame(data)
 
 ```{r manipulate_some_data, include = FALSE}
 # now that the whole dataset has been wrangled, let's filter it down to just the relevant symbol info, then we'll pivot it by the date columns to long format and store for later plotting
-pivoted_data <- data |> 
-  filter(`Company`==params$symbol) |>
+pivoted_data <- data |>
+  filter(`Company` == params$symbol) |>
   pivot_longer(
     cols = matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"), # YYYY-MM-DD regex
     names_to = "Date",
     values_to = "Value",
     names_prefix = ""
-  ) 
+  )
 df_to_graph <- pivoted_data |>
   select(-Company, -Forward_PE_Ratio, -PEG_Ratio, -Price_Sales_Ratio, -Price_Book_Ratio, -EV_REV_Ratio, -EV_EBITDA_Ratio) |> # pruning off the data that isn't needed for plotting (incl. Company, leaving just Date and Value)
-  mutate(Date = as.Date(Date))# force Date col as Date type
+  mutate(Date = as.Date(Date)) # force Date col as Date type
 ```
 
 
 ```{r make_the_line_chart_happen}
 # line chart of stock price by date
-df_to_graph |> ggplot(aes(x = Date, y=Value)) +
+df_to_graph |> ggplot(aes(x = Date, y = Value)) +
   geom_line() + # make pretty line
   geom_point() + # add points on actual data points
   labs(x = "Date", y = paste(params$symbol, "Price", sep = " ")) +
-  scale_x_date(date_breaks = "10 day", date_labels =  "%D") + # breaks every 10d, with labels YYYY-MM-DD
+  scale_x_date(date_breaks = "10 day", date_labels = "%D") + # breaks every 10d, with labels YYYY-MM-DD
   theme_dark()
-
 ```
 
 ```{r make_the_financial_ratios_happen, include = FALSE}
@@ -91,77 +89,76 @@ df_to_graph |> ggplot(aes(x = Date, y=Value)) +
 fin_ratios <- pivoted_data |>
   select(Company, Forward_PE_Ratio, PEG_Ratio, Price_Sales_Ratio, Price_Book_Ratio, EV_REV_Ratio, EV_EBITDA_Ratio) |>
   distinct()
-
-
 ```
 
 ```{r plot_the_financial_ratios}
 # first plot is PE ratio and EV_EBITDA
-# will need to determine min and max for plot below
-things_to_plot <- c("Forward PE Ratio", "EV/EBITDA Ratio")
+#
 
-# TODO first plot
-# PE_EV_plot <- pivoted_data |>
-#   filter(Company == params$symbol) |>
-#   ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
-#   #geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
-#   #geom_point()
-#   theme_dark()
-#   
+PE_EV_data <- fin_ratios |>
+  select(Forward_PE_Ratio, EV_EBITDA_Ratio)
+
+v <- c(PE_EV_data["Forward_PE_Ratio"], PE_EV_data["EV_EBITDA_Ratio"])
+
 df <- data.frame(
-  id    = factor(c("A", "B", "C")),
-  min   = c(2, 4, 6),
-  value = c(5, 7, 9),
-  max   = c(8, 10, 12)
+  id    = factor(c("Forward PE Ratio", "EV/EBITDA Ratio")),
+  min   = c(15, 6),
+  value = c(v[0], v[1]),
+  max   = c(25, 20)
 )
 
+
 # Build the plot
-ggplot(
-  df,
-       aes(y = id)
-       ) +
-  
+box_thickness <- 0.8
+PE_EV_plot <- df |>
+  ggplot(
+    aes(y = id) # represents the type of financial ration: PE, EV, etc
+  ) +
+
   # Box spanning min to max
   geom_rect(
     aes(
       xmin = min,
-        xmax = max,
-                ymin = as.numeric(id) - 0.3,
-                ymax = as.numeric(id) + 0.3),
-            fill = "lightgray",
-    color = "darkgray") +
-  
-  # Horizontal pointrange for min → max with a point at value
+      xmax = max,
+      ymin = as.numeric(id) - box_thickness / 2,
+      ymax = as.numeric(id) + box_thickness / 2
+    ),
+    fill = "lightgray",
+    color = "darkgray"
+  ) +
+
+  # Horizontal pointrange for min to max with a point at value
   geom_pointrangeh(
     aes(
       x = value,
       xmin = min,
-      xmax = max),
-                   size = 1.1,
-                   color = "blue") +
-  
-  labs(x = "Value",
-       y = "Group",
-       title = "Example of geom_pointrangeh with min–value–max"
-       ) +
+      xmax = max
+    ),
+    size = 1.1,
+    color = "blue"
+  ) +
+  labs(
+    x = "Value",
+    y = "",
+    title = "Example of geom_pointrangeh with min–value–max"
+  ) +
   theme_minimal()
+PE_EV_plot
 ```
 
 
 ```{r plot_the_other_stuff}
-# first plot is 
+# first plot is
 # will need to determine min and max for plot below
-# things_to_plot <- c()
-# 
+things_to_plot <- c("Price_Sales_Ratio", "Price_Book_Ratio", "PEG_Ratio", "EV_REV_Ratio")
+#
 # # TODO second plot
-# plot <- pivoted_data |> 
+# plot <- pivoted_data |>
 #   ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
 #   geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
 #   theme_dark()
-# 
+#
 # plot
 ```
 
 TODO barf out the explanation in the html file given
-
-
