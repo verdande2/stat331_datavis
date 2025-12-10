@@ -34,6 +34,11 @@ library(rmarkdown)
 ```
 
 # TODO make this more ... programmatic... I'm a damn programmer, after all. Three manual calls is ... barbaric...
+```{r programmer_stuff}
+
+
+```
+
 ```{r}
 render(
      input = "Report.Rmd",
