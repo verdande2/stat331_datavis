@@ -38,8 +38,8 @@ library(ggrepel) # for repelling labels off of one another
 
 
 ```{r load_dataset, include = FALSE}
-MH_Data <- readr::read_csv("Mental_Health_Dataset.csv")
-readr::spec(MH_Data)
+happy_data <- readr::read_csv("world_happiness_report.csv")
+readr::spec(happy_data)
 ```
 
 ```{r mangle_data_part_one, include = FALSE}
@@ -56,12 +56,15 @@ readr::spec(MH_Data)
 
 ```{r plot_one}
 # TODO do me!
+# first plot will be a scatter plot, plotting happiness score vs Economy (GDP per Capita) in 2016, showing possible relation between GDP and happiness
 ```
 
 ```{r plot_two}
 # TODO do me!
+# second plot will be a scatter plot, plotting happiness score vs Trust (Government Corruption) in 2016
 ```
 
 ```{r plot_three}
 # TODO do me!
+# third plot will be line plot showing USA happiness score from 2015-2016
 ```
