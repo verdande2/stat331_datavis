@@ -112,7 +112,10 @@ df <- data.frame(
 box_thickness <- 0.8
 PE_EV_plot <- df |>
   ggplot(
-    aes(y = id) # represents the type of financial ration: PE, EV, etc
+    aes(y = id, # represents the type of financial ration: PE, EV, etc
+        xmin = 1,
+        xmax = 10
+    )
   ) +
 
   # Box spanning min to max
