@@ -3,7 +3,6 @@
 # out of the shell created in the code.  Upload your app.R code.
 library(shiny)
 library(plotly)
-# library(gridlayout) # no longer exists
 library(bslib)
 library(DT)
 library(tidyverse)
