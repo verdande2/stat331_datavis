@@ -15,7 +15,6 @@
 # You will submit the .R file for your app (named app.R) and the data file used to make it work.  Put these together in a zip folder
 # and submit that.  If your file has a more complicated structure, zip all of the elements that will make it work into one file and submit that.
 
-
 library(shiny)
 library(shinydashboard)
 library(plotly)
@@ -24,49 +23,58 @@ library(dplyr)
 
 # Load dataset
 ui <- dashboardPage(
-
   dashboardHeader(title = "Dynamic Dashboard"),
 
   dashboardSidebar(
-    sidebarMenu(id = "sidebar",
+    sidebarMenu(
+      id = "sidebar",
       menuItem("Columns", tabName = "select_variable"),
 
-      tabItem(tabName = "Selections",
-              fluidRow(
-                # Dataset selector (placed above column selector)
-                selectInput(inputId = "select_dataset",
-                            label = "Select Dataset:",
-                            choices = c("diamonds" = "diamonds",
-                                        "mtcars" = "mtcars",
-                                        "iris" = "iris"),
-                            selected = "diamonds"
-                ),
-
-                # Column selector
-                selectInput(inputId = "select_col",
-                            label = "Select Column:",
-                            choices = NULL,
-                            selectize = TRUE
-                )
-              )
-            ),
+      tabItem(
+        tabName = "Selections",
         fluidRow(
-          conditionalPanel(
-            condition = "output.column_type == 'categorical'",
-            checkboxGroupInput(inputId = "filter_categorical",
-                           label = "Select Levels:",
-                           choices = NULL,
-                           selected = NULL)
+          # Dataset selector (placed above column selector)
+          selectInput(
+            inputId = "select_dataset",
+            label = "Select Dataset:",
+            choices = c(
+              "diamonds" = "diamonds",
+              "mtcars" = "mtcars",
+              "iris" = "iris"
+            ),
+            selected = "diamonds"
           ),
-          conditionalPanel(
-            condition = "output.column_type == 'numeric'",
-            sliderInput(inputId = "filter_numeric",
-                            label = "Filter Numeric Data",
-                            min = 0,
-                            max = 100,
-                            value = c(10,30))
+
+          # Column selector
+          selectInput(
+            inputId = "select_col",
+            label = "Select Column:",
+            choices = NULL,
+            selectize = TRUE
           )
         )
+      ),
+      fluidRow(
+        conditionalPanel(
+          condition = "output.column_type == 'categorical'",
+          checkboxGroupInput(
+            inputId = "filter_categorical",
+            label = "Select Levels:",
+            choices = NULL,
+            selected = NULL
+          )
+        ),
+        conditionalPanel(
+          condition = "output.column_type == 'numeric'",
+          sliderInput(
+            inputId = "filter_numeric",
+            label = "Filter Numeric Data",
+            min = 0,
+            max = 100,
+            value = c(10, 30)
+          )
+        )
+      )
     )
   ),
 
@@ -86,28 +94,29 @@ ui <- dashboardPage(
 
 
 server <- function(input, output, session) {
-
   # Dynamically load and filter dataset
   df <- reactive({
     req(input$select_dataset)
 
-    switch(input$select_dataset,
-           "diamonds" = diamonds,
-           "mtcars" = mtcars,
-           "iris" = iris)
+    switch(
+      input$select_dataset,
+      "diamonds" = diamonds,
+      "mtcars" = mtcars,
+      "iris" = iris
+    )
   })
-
 
   # Dynamically fill selectInput when dataset changes
   observeEvent(input$select_dataset, {
     req(df())
     freezeReactiveValue(input, "select_col")
-    updateSelectInput(session,
-                      "select_col",
-                      choices = names(df()),
-                      selected = NULL)
+    updateSelectInput(
+      session,
+      "select_col",
+      choices = names(df()),
+      selected = NULL
+    )
   })
-
 
   #Identify and return column type information
   output$column_type <- reactive({
@@ -119,12 +128,11 @@ server <- function(input, output, session) {
     col_data <- df() %>% select(!!sym(selected_col)) %>% na.omit()
     common_class <- max(class(col_data[[1]]))
 
-
     # Class classification
-    if(common_class %in% c("double", "integer", "numeric")) {
+    if (common_class %in% c("double", "integer", "numeric")) {
       #print("numeric")
       return("numeric")
-    } else if(common_class %in% c("character", "factor", "ordered")) {
+    } else if (common_class %in% c("character", "factor", "ordered")) {
       #print("categorical")
       return("categorical")
     } else {
@@ -135,71 +143,78 @@ server <- function(input, output, session) {
 
   outputOptions(output, "column_type", suspendWhenHidden = FALSE)
 
-
   observeEvent(c(input$select_col), {
-     req(input$select_col)
+    req(input$select_col)
 
-     selected_col <- input$select_col
+    selected_col <- input$select_col
 
-     # Get column type
-     col_type <- df()[[selected_col]]
+    # Get column type
+    col_type <- df()[[selected_col]]
 
-     # Extract data
-     data <- df() %>%
-       select(!!sym(selected_col)) %>%
-       unlist(use.names = FALSE)
+    # Extract data
+    data <- df() %>%
+      select(!!sym(selected_col)) %>%
+      unlist(use.names = FALSE)
 
-     if (length(data) == 0) return()
+    if (length(data) == 0) {
+      return()
+    }
 
-     # Update based on column type
-     if (is.numeric(col_type)) {
-       updateSliderInput(
-         session,
-         inputId = "filter_numeric",
-         min = min(data),
-         max = max(data),
-         value = c(quantile(data, 0.25)[[1]], quantile(data, 0.75)[[1]])
-         )
-     } else {
-       updateCheckboxGroupInput(
-         session,
-         inputId = "filter_categorical",
-         choices = unique(df()[[selected_col]]),
-         selected = unique(df()[[selected_col]])
-       )
-     }
-   })
+    # Update based on column type
+    if (is.numeric(col_type)) {
+      updateSliderInput(
+        session,
+        inputId = "filter_numeric",
+        min = min(data),
+        max = max(data),
+        value = c(quantile(data, 0.25)[[1]], quantile(data, 0.75)[[1]])
+      )
+    } else {
+      updateCheckboxGroupInput(
+        session,
+        inputId = "filter_categorical",
+        choices = unique(df()[[selected_col]]),
+        selected = unique(df()[[selected_col]])
+      )
+    }
+  })
 
   output$dynamic_categorical_graphs <- renderUI({
     req(input$select_col)
 
     fluidRow(
-          column(6,
-                 box(title = "Bar Plot",
-                     status = "success",
-                     solidHeader = TRUE,
-                     plotlyOutput("bar_plot")
-                 )
-          )
+      column(
+        6,
+        box(
+          title = "Bar Plot",
+          status = "success",
+          solidHeader = TRUE,
+          plotlyOutput("bar_plot")
+        )
+      )
     )
   })
   output$dynamic_numeric_graphs <- renderUI({
     req(input$select_col)
 
     fluidRow(
-      column(6,
-             box(title = "Distribution",
-                 status = "success",
-                 solidHeader = TRUE,
-                 plotlyOutput("histogram")
-             )
+      column(
+        6,
+        box(
+          title = "Distribution",
+          status = "success",
+          solidHeader = TRUE,
+          plotlyOutput("histogram")
+        )
       ),
-      column(6,
-             box(title = "Box-plot",
-                 status = "success",
-                 solidHeader = TRUE,
-                 plotlyOutput("box_plot")
-             )
+      column(
+        6,
+        box(
+          title = "Box-plot",
+          status = "success",
+          solidHeader = TRUE,
+          plotlyOutput("box_plot")
+        )
       )
     )
   })
@@ -209,8 +224,10 @@ server <- function(input, output, session) {
 
     plt <- df() %>%
       select(!!sym(input$select_col)) %>%
-      filter(!!sym(input$select_col) >= input$filter_numeric[1] &
-               !!sym(input$select_col) <= input$filter_numeric[2]) %>%
+      filter(
+        !!sym(input$select_col) >= input$filter_numeric[1] &
+          !!sym(input$select_col) <= input$filter_numeric[2]
+      ) %>%
       ggplot(aes(y = !!sym(input$select_col), )) +
       geom_boxplot()
 
@@ -222,12 +239,14 @@ server <- function(input, output, session) {
 
     plt <- df() %>%
       select(!!sym(input$select_col)) %>%
-      filter(!!sym(input$select_col) >= input$filter_numeric[1] &
-               !!sym(input$select_col) <= input$filter_numeric[2]) %>%
-      ggplot(aes(x = !!sym(input$select_col)))+
+      filter(
+        !!sym(input$select_col) >= input$filter_numeric[1] &
+          !!sym(input$select_col) <= input$filter_numeric[2]
+      ) %>%
+      ggplot(aes(x = !!sym(input$select_col))) +
       geom_histogram()
 
-      ggplotly(plt)
+    ggplotly(plt)
   })
 
   output$bar_plot <- renderPlotly({
@@ -236,14 +255,11 @@ server <- function(input, output, session) {
     plt <- df() %>%
       select(!!sym(input$select_col)) %>%
       filter(!!sym(input$select_col) %in% input$filter_categorical) %>%
-      ggplot(aes(x = !!sym(input$select_col)))+
+      ggplot(aes(x = !!sym(input$select_col))) +
       geom_bar()
 
-      ggplotly(plt)
+    ggplotly(plt)
   })
-
 }
 
 shinyApp(ui, server)
-
-

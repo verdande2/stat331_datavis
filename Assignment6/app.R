@@ -44,6 +44,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     fluidRow(
       card(
+        # TODO look into why these overflow into other divs badly, need to set overflow property?
         card_header("Settings"),
         fileInput(
           inputId = "upload",
@@ -67,7 +68,7 @@ ui <- dashboardPage(
     ## Sidebar Card -------------
     fluidRow(
       tabBox(
-        title = "State Highlights",
+        title = "State Highlights", # TODO need to make this spaced out more and prettier, make it extend to 100% width
         id = "highlights",
         tabPanel(
           "Per 100,000",
