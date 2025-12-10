@@ -17,8 +17,21 @@ library(bs4Dash)
 map <- us_map()
 
 totals_vec <- c("state.name", "total_cases", "Total Deaths", "Total # Tests")
-seven_vec <- c("state.name", "Cases in Last 7 Days", "Deaths in Last 7 Days", "Total # Tests Last 7 Days", "case_rank")
-per_100000_vec <- c("state.name", "cases_per_100000", "Death Rate per 100000", "7-Day Cases Rate per 100000", "# Tests per 100K", "case_rank")
+seven_vec <- c(
+  "state.name",
+  "Cases in Last 7 Days",
+  "Deaths in Last 7 Days",
+  "Total # Tests Last 7 Days",
+  "case_rank"
+)
+per_100000_vec <- c(
+  "state.name",
+  "cases_per_100000",
+  "Death Rate per 100000",
+  "7-Day Cases Rate per 100000",
+  "# Tests per 100K",
+  "case_rank"
+)
 
 
 # UI ----------------
@@ -386,7 +399,8 @@ server <- function(input, output, server) {
     req(input$upload)
 
     ext <- tools::file_ext(input$upload$name)
-    switch(ext,
+    switch(
+      ext,
       csv = vroom::vroom(input$upload$datapath, delim = ","),
       tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
       validate("Invalid file; Please upload a .csv or .tsv file")
@@ -411,15 +425,30 @@ server <- function(input, output, server) {
 
   # Prepare dropdown menu values ----
   rank_vec <- reactive({
-    setdiff(names(COVID_data()), c("fips", "abbr", "state.name", "geom", "Confirmed Cases", "Probable Cases", "Confirmed Deaths", "Probable Deaths", "case_rank"))
+    setdiff(
+      names(COVID_data()),
+      c(
+        "fips",
+        "abbr",
+        "state.name",
+        "geom",
+        "Confirmed Cases",
+        "Probable Cases",
+        "Confirmed Deaths",
+        "Probable Deaths",
+        "case_rank"
+      )
+    )
   })
 
   # Apply Dynamic UI elements  ----
   observeEvent(input$upload, {
     updateSelectInput(inputId = "rankInputSelect", choices = rank_vec())
-    updateSelectInput(inputId = "myState", choices = unique(COVID_data()$state.name))
+    updateSelectInput(
+      inputId = "myState",
+      choices = unique(COVID_data()$state.name)
+    )
   })
-
 
   # Generate Report Button Event ----
   # observeEvent(input$reportButton,
@@ -443,14 +472,14 @@ server <- function(input, output, server) {
         cases = COVID_data(),
         filter = input$rankInputSelect
       )
-      rmarkdown::render(tempReport,
+      rmarkdown::render(
+        tempReport,
         output_file = file,
         params = params,
         envir = new.env(parent = globalenv())
       )
     }
   )
-
 
   # Output Value Boxes ----
 
@@ -478,7 +507,6 @@ server <- function(input, output, server) {
       filter(state.name == input$myState)
     r$`# Tests per 100K Last 7 Days`
   })
-
 
   ## Totals Value Boxes ----------------
   output$totalCases <- renderText({
@@ -530,7 +558,6 @@ server <- function(input, output, server) {
     r$`Total # Tests Last 7 Days`
   })
 
-
   ## 30 Value Boxes ----------------
   output$test100K30 <- renderText({
     r <- COVID_data() %>%
@@ -559,7 +586,9 @@ server <- function(input, output, server) {
   output$distPlot <- renderPlotly({
     selection <- input$rankInputSelect
     COVID_data() %>%
-      mutate(highlight_state = if_else(state.name == input$myState, "Y", "N")) %>%
+      mutate(
+        highlight_state = if_else(state.name == input$myState, "Y", "N")
+      ) %>%
       mutate(state.name = fct_reorder(state.name, get(selection))) %>%
       ggplot(aes(
         x = get(selection),
@@ -575,18 +604,18 @@ server <- function(input, output, server) {
       )
   })
 
-
   #  Output Map Plot -----------
   output$mapPlotly <- renderPlotly({
     COVID_data() %>%
-      mutate(highlight_state = if_else(state.name == input$myState, "Y", "N")) %>%
+      mutate(
+        highlight_state = if_else(state.name == input$myState, "Y", "N")
+      ) %>%
       mutate(state.name = fct_reorder(state.name, cases_per_100000)) %>%
       ggplot() +
       geom_sf(aes(fill = cases_per_100000, alpha = highlight_state)) +
       scale_fill_gradient(low = "white", high = "blue") +
       guides(alpha = "none")
   })
-
 
   #  Output Radar Plot -----------
   output$plotPer100000 <- renderPlot({
@@ -595,11 +624,18 @@ server <- function(input, output, server) {
 
     COVID_data() %>%
       mutate(case_rank = rank(cases_per_100000, ties.method = "min")) %>%
-      bind_rows(COVID_data() %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
+      bind_rows(
+        COVID_data() %>%
+          summarise(across(where(is.numeric), mean, na.rm = TRUE))
+      ) %>%
       mutate(state.name = replace_na(state.name, "Mean")) %>%
-      bind_rows(COVID_data() %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
+      bind_rows(
+        COVID_data() %>% summarise(across(where(is.numeric), min, na.rm = TRUE))
+      ) %>%
       mutate(state.name = replace_na(state.name, "Min")) %>%
-      bind_rows(COVID_data() %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
+      bind_rows(
+        COVID_data() %>% summarise(across(where(is.numeric), max, na.rm = TRUE))
+      ) %>%
       mutate(state.name = replace_na(state.name, "Max")) %>%
       arrange(match(state.name, c("Max", "Min"))) %>%
       select(all_of(per_100000_vec)) %>%
@@ -613,7 +649,13 @@ server <- function(input, output, server) {
         pcol = pcol,
         pfcol = pfcol
       )
-    legend(x = 1, y = 1, legend = c(input$myState, "Mean"), pch = 20, col = pcol)
+    legend(
+      x = 1,
+      y = 1,
+      legend = c(input$myState, "Mean"),
+      pch = 20,
+      col = pcol
+    )
   })
 }
 
