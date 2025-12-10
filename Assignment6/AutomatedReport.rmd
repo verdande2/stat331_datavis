@@ -7,6 +7,8 @@ output:
     code_folding: hide
 
 params:
+  cases: COVID_data(), # TODO this is a problem point. Need cases passed, but unsure how to pass a "default" so to speak
+  filter: total_cases
   state: 
     label: "State"
     value: Alaska
@@ -24,28 +26,6 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE
 )
-```
-
-
-
-# YAML for this document.  
-```{r, eval = FALSE, echo = TRUE}
-#date: "`r Sys.Date()`"
-
-output: 
-  html_document:
-    theme: cerulean
-    code_folding: hide
-
-params:
-  state: 
-    label: "State"
-    value: Alaska
-    input: select
-    choices: !r append(state.name, "District of Columbia")
-    
-title: "`r params$state` COVID Cases This Week"         
-subtitle: "COVID Report Example"
 ```
 
 ## Source

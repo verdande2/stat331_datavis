@@ -249,7 +249,7 @@ server <- function(input, output, server) {
       )
       rmarkdown::render(tempReport,
         output_file = file,
-        params = params, # Warning: Error in knit_params_get: render params not declared in YAML: cases, filter TODO WTF
+        params = params, # Warning: Error in knit_params_get: render params not declared in YAML: cases, filter TODO WTF Tried putting them in yaml of the report.Rmd
         envir = new.env(parent = globalenv())
       )
     }
