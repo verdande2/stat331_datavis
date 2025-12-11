@@ -44,6 +44,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     fluidRow(
       card(
+        # TODO gotta find a better way than card(), it pushes the Settings label off left side of screen, need to adjust boundaries
         # TODO look into why these overflow into other divs badly, need to set overflow property?
         card_header("Settings"),
         fileInput(
