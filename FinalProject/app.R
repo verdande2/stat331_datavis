@@ -24,106 +24,52 @@ library(dplyr)
 # Load dataset
 
 ui <- dashboardPage(
-  dashboardHeader(title = "Dynamic Dashboard"),
-
+  dashboardHeader(title = "World Happiness Ranking Dashboard"),
   dashboardSidebar(
     sidebarMenu(
       id = "sidebar",
-      menuItem("Columns", tabName = "select_variable"),
-      fluidRow(
-        ## Settings and config ---------------
-        # selectInput(
-        #   inputId = "select_dataset",
-        #   label = "Select Dataset:",
-        #   choices = c(
-        #     "diamonds" = "diamonds",
-        #     "mtcars" = "mtcars",
-        #     "iris" = "iris"
-        #   ),
-        #   selected = "diamonds"
-        # ),
-
-        ## Year selector ---------------
-        selectInput(
-          inputId = "select_year",
-          label = "Year:",
-          choices = NULL
-        ),
-        ## Input selector ---------------
-        selectInput(
-          inputId = "select_input",
-          label = "Input:",
-          choices = NULL
-        ),
-        ## Output selector ---------------
-        selectInput(
-          inputId = "select_output",
-          label = "Output:",
-          choices = NULL
-        )
-      ),
-      # fluidRow(
-      #   conditionalPanel(
-      #     condition = "output.column_type == 'categorical'",
-      #     checkboxGroupInput(
-      #       inputId = "filter_categorical",
-      #       label = "Select Levels:",
-      #       choices = NULL,
-      #       selected = NULL
-      #     )
-      #   ),
-      #   conditionalPanel(
-      #     condition = "output.column_type == 'numeric'",
-      #     sliderInput(
-      #       inputId = "filter_numeric",
-      #       label = "Filter Numeric Data",
-      #       min = 0,
-      #       max = 100,
-      #       value = c(10, 30)
-      #     )
-      #   )
-      # )
+      menuItem("Columns",
+        tabName = "main",
+        icon = icon("home")
+      )
     )
   ),
-
   dashboardBody(
-    fluidRow(
-      # conditionalPanel(
-      #   condition = "output.column_type == 'categorical'",
-      #   uiOutput("dynamic_categorical_graphs")
-      # ),
-      # conditionalPanel(
-      #   condition = "output.column_type == 'numeric'",
-      #   uiOutput("dynamic_numeric_graphs")
-      # )
+    tabItems(
+      tabName = "main",
       fluidRow(
-        plotlyOutput(
-          outputId = "plotScatter",
-          width = "100%",
-          height = "400px"
+        fluidRow(
+          plotlyOutput(
+            outputId = "plotScatter",
+            width = "100%",
+            height = "400px"
+          )
+        ),
+        fluidRow(
+          plotlyOutput(
+            outputId = "scatterGDP",
+            width = "100%",
+            height = "400px"
+          ),
+          plotlyOutput(
+            outputId = "scatterCorruption",
+            width = "100%",
+            height = "400px"
+          )
+        ),
+        fluidRow(
+          plotlyOutput(
+            outputId = "scatterLife",
+            width = "100%",
+            height = "400px"
+          ),
+          plotlyOutput(
+            outputId = "scatterFreedom",
+            width = "100%",
+            height = "400px"
+          )
         )
-      ),
-
-      fluidRow(
-        plotlyOutput(
-          outputId = "scatterGDP",
-          width = "100%",
-          height = "400px"
-        ),
-        outputId = "scatterCorruption",
-        width = "100%",
-        height = "400px"
-      ),
-      fluidRow(
-        plotlyOutput(
-          outputId = "scatterLife",
-          width = "100%",
-          height = "400px"
-        ),
-        outputId = "scatterFreedom",
-        width = "100%",
-        height = "400px"
-      ),
+      )
     )
   )
 )
@@ -134,8 +80,7 @@ server <- function(input, output, session) {
   df <- reactive({
     req(input$select_dataset)
 
-    switch(
-      input$select_dataset,
+    switch(input$select_dataset,
       "diamonds" = diamonds,
       "mtcars" = mtcars,
       "iris" = iris
@@ -154,25 +99,27 @@ server <- function(input, output, session) {
     )
   })
 
-  #Identify and return column type information
+  # Identify and return column type information
   output$column_type <- reactive({
     req(input$select_col)
 
     selected_col <- input$select_col
 
     selected_col <- noquote(input$select_col)
-    col_data <- df() %>% select(!!sym(selected_col)) %>% na.omit()
+    col_data <- df() %>%
+      select(!!sym(selected_col)) %>%
+      na.omit()
     common_class <- max(class(col_data[[1]]))
 
     # Class classification
     if (common_class %in% c("double", "integer", "numeric")) {
-      #print("numeric")
+      # print("numeric")
       return("numeric")
     } else if (common_class %in% c("character", "factor", "ordered")) {
-      #print("categorical")
+      # print("categorical")
       return("categorical")
     } else {
-      #print("special")
+      # print("special")
       return("special")
     }
   })
