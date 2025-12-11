@@ -28,45 +28,51 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       id = "sidebar",
-      menuItem("Columns",
-        tabName = "main",
-        icon = icon("home")
+      menuItem(
+        "Settings",
+        tabName = "main"
+      ),
+      menuItem(
+        "Another tab",
+        tabName = "second"
       )
     )
   ),
   dashboardBody(
     tabItems(
-      tabName = "main",
-      fluidRow(
+      tabItem(
+        tabName = "main",
         fluidRow(
-          plotlyOutput(
-            outputId = "plotScatter",
-            width = "100%",
-            height = "400px"
-          )
-        ),
-        fluidRow(
-          plotlyOutput(
-            outputId = "scatterGDP",
-            width = "100%",
-            height = "400px"
+          fluidRow(
+            plotlyOutput(
+              outputId = "plotScatter",
+              width = "100%",
+              height = "400px"
+            )
           ),
-          plotlyOutput(
-            outputId = "scatterCorruption",
-            width = "100%",
-            height = "400px"
-          )
-        ),
-        fluidRow(
-          plotlyOutput(
-            outputId = "scatterLife",
-            width = "100%",
-            height = "400px"
+          fluidRow(
+            plotlyOutput(
+              outputId = "scatterGDP",
+              width = "100%",
+              height = "400px"
+            ),
+            plotlyOutput(
+              outputId = "scatterCorruption",
+              width = "100%",
+              height = "400px"
+            )
           ),
-          plotlyOutput(
-            outputId = "scatterFreedom",
-            width = "100%",
-            height = "400px"
+          fluidRow(
+            plotlyOutput(
+              outputId = "scatterLife",
+              width = "100%",
+              height = "400px"
+            ),
+            plotlyOutput(
+              outputId = "scatterFreedom",
+              width = "100%",
+              height = "400px"
+            )
           )
         )
       )
