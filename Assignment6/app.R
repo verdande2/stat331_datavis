@@ -180,7 +180,7 @@ ui <- dashboardPage(
       ## Data Table Card --------------
       box(
         title = "Data Table",
-        DTOutput(outputId = "myTable", width = "100%")
+        DTOutput(outputId = "myTable", width = "100%") # TODO figure out how to adjust overflow settings so it doesn't overflow and barf text all over
       ),
       ## plotly Card -------------
       box(
