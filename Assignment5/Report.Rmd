@@ -93,17 +93,19 @@ fin_ratios <- pivoted_data |>
 
 ```{r plot_the_financial_ratios}
 # first plot is PE ratio and EV_EBITDA
-#
 
+# prune off the first two values we want to plot
 PE_EV_data <- fin_ratios |>
   select(Forward_PE_Ratio, EV_EBITDA_Ratio)
 
+# dump them in a vector
 v <- c(PE_EV_data["Forward_PE_Ratio"], PE_EV_data["EV_EBITDA_Ratio"])
 
+# make a df of the data to plot
 df <- data.frame(
   id    = factor(c("Forward PE Ratio", "EV/EBITDA Ratio")),
   min   = c(15, 6),
-  value = c(v[0], v[1]),
+  value = c(v$Forward_PE_Ratio, v$EV_EBITDA_Ratio),
   max   = c(25, 20)
 )
 
@@ -133,7 +135,7 @@ PE_EV_plot <- df |>
   # Horizontal pointrange for min to max with a point at value
   geom_pointrangeh(
     aes(
-      x = value,
+      x = value, 
       xmin = min,
       xmax = max
     ),
@@ -141,9 +143,9 @@ PE_EV_plot <- df |>
     color = "blue"
   ) +
   labs(
-    x = "Value",
+    x = "Metric",
     y = "",
-    title = "Example of geom_pointrangeh with min–value–max"
+    title = "Forward PE and EV/EBITDA Ratios"
   ) +
   theme_minimal()
 PE_EV_plot
@@ -151,17 +153,108 @@ PE_EV_plot
 
 
 ```{r plot_the_other_stuff}
-# first plot is
-# will need to determine min and max for plot below
-things_to_plot <- c("Price_Sales_Ratio", "Price_Book_Ratio", "PEG_Ratio", "EV_REV_Ratio")
-#
-# # TODO second plot
-# plot <- pivoted_data |>
-#   ggplot(aes(y = things_to_plot, ymin=0, ymax=100)) +
-#   geom_pointrange(aes(x=Forward_PE_Ratio, xmin=0, xmax=100)) +
-#   theme_dark()
-#
-# plot
+
+# prune off the first two values we want to plot
+PS_PB_PEG_EVREV_data <- fin_ratios |>
+  select(Price_Sales_Ratio, Price_Book_Ratio, PEG_Ratio, EV_REV_Ratio)
+
+# dump them in a vector
+v <- c(PS_PB_PEG_EVREV_data["Price_Sales_Ratio"], PS_PB_PEG_EVREV_data["Price_Book_Ratio"],  PS_PB_PEG_EVREV_data["PEG_Ratio"],  PS_PB_PEG_EVREV_data["EV_REV_Ratio"])
+
+# make a df of the data to plot
+df <- data.frame(
+  id    = factor(c("Price Sales Ratio", "Price Book Ratio", "PEG Ratio", "EV/REV Ratio")),
+  min   = c(1, 1, 0.5, 1),
+  value = c(v$Price_Sales_Ratio, v$Price_Book_Ratio, v$PEG_Ratio, v$EV_REV_Ratio),
+  max   = c(3, 3, 1.5, 3)
+)
+
+
+# Build the plot
+box_thickness <- 0.8
+PS_PB_PEG_EVREV_plot <- df |>
+  ggplot(
+    aes(y = id, # represents the type of financial ration: PE, EV, etc
+        xmin = 1,
+        xmax = 10
+    )
+  ) +
+
+  # Box spanning min to max
+  geom_rect(
+    aes(
+      xmin = min,
+      xmax = max,
+      ymin = as.numeric(id) - box_thickness / 2,
+      ymax = as.numeric(id) + box_thickness / 2
+    ),
+    fill = "lightgray",
+    color = "darkgray"
+  ) +
+
+  # Horizontal pointrange for min to max with a point at value
+  geom_pointrangeh(
+    aes(
+      x = value, 
+      xmin = min,
+      xmax = max
+    ),
+    size = 1.1,
+    color = "blue"
+  ) +
+  labs(
+    x = "Metric",
+    y = "",
+    title = "Price Sales, Price Book, PEG, EV/REV Ratios"
+  ) +
+  theme_minimal()
+PS_PB_PEG_EVREV_plot
 ```
 
-TODO barf out the explanation in the html file given
+P/E Forward
+
+Definition: The P/E Forward ratio compares a company’s current share price to its expected earnings per share over the next 12 months. It helps investors assess valuation based on future profitability.
+
+Typical Range:
+- < 15: Undervalued or mature
+- 15–25: Fairly valued
+- > 25: High growth expectations
+PEG Ratio
+
+Definition: The PEG ratio adjusts the P/E ratio by factoring in expected earnings growth, offering a more nuanced valuation. Typical Range:
+- < 1: Undervalued
+- ≈ 1: Fairly valued
+- > 1: Overvalued
+Price/Sales
+
+Definition: This ratio compares a company’s market capitalization to its total revenue. It’s useful for evaluating companies with little or no earnings.
+Typical Range:
+- < 1: Undervalued
+- 1–3: Reasonable
+- > 3: High expectations
+Price/Book
+
+Definition: The P/B ratio compares market value to book value, indicating how much investors are willing to pay for net assets.
+
+Typical Range:
+- < 1: Possibly undervalued
+- 1–3: Normal
+- > 3: Premium valuation
+EV/Revenue
+
+Definition: This ratio compares a company’s total value (including debt) to its revenue. It’s useful for comparing companies with different capital structures.
+
+Typical Range:
+- < 1: Undervalued
+- 1–3: Reasonable
+- > 3: High growth expectations
+EV/EBITDA
+
+Definition: EV/EBITDA measures a company’s total value relative to its earnings before interest, taxes, depreciation, and amortization. It’s widely used for valuation across industries.
+
+Typical Range:
+- < 6: Undervalued
+- 6–12: Fair
+- > 20: High growth or overvalued
+
+
