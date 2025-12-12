@@ -26,7 +26,7 @@ library(DT)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
-#world <- ne_countries(scale = "medium", returnclass = "sf")
+world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Load dataset
 
@@ -85,6 +85,8 @@ ui <- dashboardPage(
             12,
             box(
               title = "Scatter Plot",
+              status = "success",
+              solidHeader = TRUE,
               plotlyOutput(
                 outputId = "plot_scatter",
                 width = "100%",
@@ -96,51 +98,69 @@ ui <- dashboardPage(
         fluidRow(
           column(
             6,
-          box(
-            title = "Map",
-            plotlyOutput(
-              outputId = "plot_map",
-              width = "100%",
-              height = "400px"
+            box(
+              title = "Map",
+              status = "success",
+              solidHeader = TRUE,
+              plotlyOutput(
+                outputId = "plot_map",
+                width = "100%",
+                height = "400px"
+              )
             )
-          )
           ),
           column(
             6,
-          box(
-            title = "Ranking",
-            plotlyOutput(
-              outputId = "plot_ranking",
-              width = "100%",
-              height = "400px"
+            box(
+              title = "Ranking",
+              status = "success",
+              solidHeader = TRUE,
+              plotlyOutput(
+                outputId = "plot_ranking",
+                width = "100%",
+                height = "400px"
+              )
             )
           )
-          )
-          )
         ),
         fluidRow(
-          column(6,
-                 plotlyOutput(
-            outputId = "scatterLife",
-            width = "100%",
-            height = "400px"
-          )
+          column(
+            6,
+            box(
+              title = "Scatter 1",
+              status = "success",
+              solidHeader = TRUE,
+              plotlyOutput(
+                outputId = "scatterLife",
+                width = "100%",
+                height = "400px"
+              )
+            )
           ),
-          column(6,
-          plotlyOutput(
-            outputId = "scatterFreedom",
-            width = "100%",
-            height = "400px"
-          )
+          column(
+            6,
+            box(
+              title = "Scatter 2",
+              status = "success",
+              solidHeader = TRUE,
+              plotlyOutput(
+                outputId = "scatterFreedom",
+                width = "100%",
+                height = "400px"
+              )
+            )
           )
         ),
         fluidRow(
-          column(12,
-                 box(
-            title = "Data Table",
-            DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
+          column(
+            12,
+            box(
+              title = "Data Table",
+              status = "success",
+              solidHeader = TRUE,
+              DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
+            )
           )
-        )
         )
       )
     )
@@ -165,109 +185,78 @@ server <- function(input, output, session) {
     )
   })
 
-  ## Update data ----
+  ## Updated data ----
   happy_data <- reactive({
+    # perform any relevant filtering, mutations, etc here
     data <- df()
 
-    data <- left_join(world, data, by = c("full" = "state.name")) |>
+    # joining our happy_data with our world data
+    data <- left_join(world, data, by = c("full" = "state.name")) |> # TODO update me for country/country code
       rename(state.name = full)
 
     return(data)
   })
 
-  # Dynamically fill selectInput when dataset changes
-  observeEvent(input$select_dataset, {
-    req(df())
-    freezeReactiveValue(input, "select_col")
+  # update the main scatter plot
+
+  # update the DT
+  output$DT_alldata <- renderDT({
+    happy_data()
+  })
+
+  # update the world map plot # TODO update this to work with rnatural earth world map data, and get the join working above
+  output$plot_worldmap <- renderPlotly({
+    happy_data() %>%
+      mutate(
+        highlight_country = if_else(country.name == input$myCountry, "Y", "N")
+      ) %>%
+      mutate(country.name = fct_reorder(country.name, cases_per_100000)) %>%
+      ggplot() +
+      geom_sf(aes(fill = cases_per_100000, alpha = highlight_country)) +
+      scale_fill_gradient(low = "white", high = "blue") +
+      guides(alpha = "none")
+  })
+
+  # # TODO determine what exactly this code chunk does...  ----
+  observeEvent(input$upload, {
+    updateSelectInput(inputId = "rankInputSelect", choices = rank_vec()) # rank vec was defined in the other app.R file
     updateSelectInput(
-      session,
-      "select_col",
-      choices = names(df()),
-      selected = NULL
+      inputId = "myState",
+      choices = unique(COVID_data()$state.name)
     )
   })
 
-  output$dynamic_categorical_graphs <- renderUI({
-    req(input$select_col)
+  # Generate Report Button Event ----
+  # handling the generate report button press event
+  observeEvent(input$report, {
+    rmarkdown::render(
+      input = "AutomatedReport.Rmd",
+      output_file = paste0(input$myCountry, ".html"),
+      params = list(country = input$myCountry)
+    )
+  })
 
-    fluidRow(
-      column(
-        6,
-        box(
-          title = "Bar Plot",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("bar_plot")
-        )
+  # handling the actual output of the file download
+  output$report <- downloadHandler(
+    filename = function() {
+      paste0(input$myCountry, "_", Sys.Date(), ".html")
+    },
+    content = function(file) {
+      tempReport <- file.path(tempdir(), "AutomatedReport.Rmd")
+      file.copy("AutomatedReport.Rmd", tempReport, overwrite = TRUE)
+      params <- list(
+        state = input$myCountry,
+        data = happy_data(),
+        filter = input$myCountry
       )
-    )
-  })
-  output$dynamic_numeric_graphs <- renderUI({
-    req(input$select_col)
-
-    fluidRow(
-      column(
-        6,
-        box(
-          title = "Distribution",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("histogram")
-        )
-      ),
-      column(
-        6,
-        box(
-          title = "Box-plot",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("box_plot")
-        )
+      rmarkdown::render(
+        tempReport,
+        output_file = file,
+        params = params,
+        envir = new.env(parent = globalenv())
       )
-    )
-  })
-
-  output$box_plot <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(
-        !!sym(input$select_col) >= input$filter_numeric[1] &
-          !!sym(input$select_col) <= input$filter_numeric[2]
-      ) %>%
-      ggplot(aes(y = !!sym(input$select_col), )) +
-      geom_boxplot()
-
-    ggplotly(plt)
-  })
-
-  output$histogram <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(
-        !!sym(input$select_col) >= input$filter_numeric[1] &
-          !!sym(input$select_col) <= input$filter_numeric[2]
-      ) %>%
-      ggplot(aes(x = !!sym(input$select_col))) +
-      geom_histogram()
-
-    ggplotly(plt)
-  })
-
-  output$bar_plot <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(!!sym(input$select_col) %in% input$filter_categorical) %>%
-      ggplot(aes(x = !!sym(input$select_col))) +
-      geom_bar()
-
-    ggplotly(plt)
-  })
+    }
+  )
 }
 
 shinyApp(ui, server)
