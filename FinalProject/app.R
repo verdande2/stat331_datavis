@@ -141,10 +141,12 @@ ui <- dashboardPage(
 
             ### Scatter Plot ----
             box(
-              conditionalPanel(condition = "input.select_country != ''",
-                title = "Scatter Plot",
+              id = "box_plot_scatter",
+              title = "Scatter Plot",
+              conditionalPanel(
+                condition = "input.select_country != ''",
                 selectInput(
-                  inputId = "selected_factor",
+                  inputId = "select_factor",
                   label = "Selected Factor:",
                   multiple = FALSE,
                   choices = "---Choose a Country to the Left---"
@@ -298,7 +300,7 @@ server <- function(input, output, session) {
     #   ) # TODO figure this shit out with selected country
 
     # get a vector of the available factors
-    v <- c() # TODO fill this out with factor column names
+    v <- c("Economy (GDP per Capita)", "Family", "Health (Life Expectancy)", "Freedom", "Trust (Government Corruption)", "Generosity", "Dystopia Residual") # TODO fix this
 
     # populate the select_factor dropdown with available factors
     message("- Updating the choices in the select_factor dropdown...")
@@ -314,13 +316,27 @@ server <- function(input, output, session) {
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
+
+
     # Updating the main scatter plot ----
     output$plot_scatter <- renderPlotly({
-      dat |>
+      happy_data() |>
+        #select(c(input$select_factor)) |> # we use the chosen factor to filter out the extraneous data
         ggplot() +
         geom_point(aes(x = `Country`, y = `Happiness Score`)) +
-        guides(alpha = "none")
+        guides()
     })
+
+    # update the box title for the scatter plot as well
+    # TODO make this conditional based on if select_factor is empty/default
+    updateBox(id = "box_plot_scatter",
+      action = "update",
+      options = list(
+        title = paste("Scatter Plot of ", input$select_factor, " and the resulting Happiness Score"), # TODO make this actually show a proper title
+        solidHeader = TRUE,
+        width = 4
+      )
+    )
 
     # update any additional plots that are based on selected factor
   })
