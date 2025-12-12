@@ -26,9 +26,7 @@ library(DT)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
-
-world <- ne_countries(scale = "medium", returnclass = "sf")
-
+#world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Load dataset
 
@@ -83,16 +81,21 @@ ui <- dashboardPage(
       tabItem(
         tabName = "main",
         fluidRow(
-          box(
-            title = "Scatter Plot",
-            plotlyOutput(
-              outputId = "plot_scatter",
-              width = "100%",
-              height = "400px"
+          column(
+            12,
+            box(
+              title = "Scatter Plot",
+              plotlyOutput(
+                outputId = "plot_scatter",
+                width = "100%",
+                height = "400px"
+              )
             )
-          ),
+          )
         ),
         fluidRow(
+          column(
+            6,
           box(
             title = "Map",
             plotlyOutput(
@@ -100,7 +103,10 @@ ui <- dashboardPage(
               width = "100%",
               height = "400px"
             )
+          )
           ),
+          column(
+            6,
           box(
             title = "Ranking",
             plotlyOutput(
@@ -109,29 +115,39 @@ ui <- dashboardPage(
               height = "400px"
             )
           )
+          )
+          )
         ),
         fluidRow(
-          plotlyOutput(
+          column(6,
+                 plotlyOutput(
             outputId = "scatterLife",
             width = "100%",
             height = "400px"
+          )
           ),
+          column(6,
           plotlyOutput(
             outputId = "scatterFreedom",
             width = "100%",
             height = "400px"
           )
+          )
         ),
         fluidRow(
-          box(
+          column(12,
+                 box(
             title = "Data Table",
-            DTOutput(outputId = "myTable", width = "100%") # TODO figure out how to adjust overflow settings so it doesn't overflow and barf text all over
+            DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
           )
+        )
         )
       )
     )
   ),
-  footer = dashboardFooter("test")
+  footer = dashboardFooter(
+    "STAT331 Data Visualization and Dashboards - Final Project - Andrew Sparkes"
+  )
 )
 
 
@@ -169,69 +185,6 @@ server <- function(input, output, session) {
       choices = names(df()),
       selected = NULL
     )
-  })
-
-  # Identify and return column type information
-  output$column_type <- reactive({
-    req(input$select_col)
-
-    selected_col <- input$select_col
-
-    selected_col <- noquote(input$select_col)
-    col_data <- df() %>%
-      select(!!sym(selected_col)) %>%
-      na.omit()
-    common_class <- max(class(col_data[[1]]))
-
-    # Class classification
-    if (common_class %in% c("double", "integer", "numeric")) {
-      # print("numeric")
-      return("numeric")
-    } else if (common_class %in% c("character", "factor", "ordered")) {
-      # print("categorical")
-      return("categorical")
-    } else {
-      # print("special")
-      return("special")
-    }
-  })
-
-  outputOptions(output, "column_type", suspendWhenHidden = FALSE)
-
-  observeEvent(c(input$select_col), {
-    req(input$select_col)
-
-    selected_col <- input$select_col
-
-    # Get column type
-    col_type <- df()[[selected_col]]
-
-    # Extract data
-    data <- df() %>%
-      select(!!sym(selected_col)) %>%
-      unlist(use.names = FALSE)
-
-    if (length(data) == 0) {
-      return()
-    }
-
-    # Update based on column type
-    if (is.numeric(col_type)) {
-      updateSliderInput(
-        session,
-        inputId = "filter_numeric",
-        min = min(data),
-        max = max(data),
-        value = c(quantile(data, 0.25)[[1]], quantile(data, 0.75)[[1]])
-      )
-    } else {
-      updateCheckboxGroupInput(
-        session,
-        inputId = "filter_categorical",
-        choices = unique(df()[[selected_col]]),
-        selected = unique(df()[[selected_col]])
-      )
-    }
   })
 
   output$dynamic_categorical_graphs <- renderUI({
