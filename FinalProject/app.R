@@ -234,7 +234,7 @@ server <- function(input, output, session) {
 
   ## Handle file upload ----
   df <- reactive({
-    print("Detected file upload...")
+    message("Detected file upload...")
     req(input$file_upload) # required id upload
 
     ext <- tools::file_ext(input$file_upload$name)
@@ -249,7 +249,7 @@ server <- function(input, output, session) {
 
   ## Update, prune, mutate, clean data, dump into reactive df ----
   happy_data <- reactive({
-    print("Cleaning up dataset...")
+    message("Cleaning up dataset...")
     dat <- df() # TODO get this selected country part working
     # |>
     #   mutate( # selected country gets a "Y" entry for the highlight_country col
@@ -271,10 +271,10 @@ server <- function(input, output, session) {
 
   ### Upload input onchange - update the country dropdown with available countries from dataset
   observeEvent(input$file_upload, {
-    print("File Upload initiated...")
+    message("File Upload initiated...")
 
     # update the country selector with the choices from the dataset
-    print("Updating the select_country element with the list of countries...")
+    message("Updating the select_country element with the list of countries...")
     updateSelectInput(
       inputId = "select_country",
       choices = unique(happy_data()$Country) # unique to remove duplicates
@@ -283,7 +283,7 @@ server <- function(input, output, session) {
 
   ### Select country onchange - update the plots based on selected country ----
   observeEvent(input$select_country, {
-    print("Select Country select Triggered...")
+    message("Select Country select Triggered...")
 
     # TODO add a way to show the selected country in each plot
     # ie. a is_selected flag with conditional color change or something
@@ -301,7 +301,7 @@ server <- function(input, output, session) {
     v <- c() # TODO fill this out with factor column names
 
     # populate the select_factor dropdown with available factors
-    print("- Updating the choices in the select_factor dropdown...")
+    message("- Updating the choices in the select_factor dropdown...")
     updateSelectInput(
       inputId = "select_factor",
       choices = v
@@ -312,7 +312,7 @@ server <- function(input, output, session) {
 
   ### Handling a change to the select factor dropdown
   observeEvent(input$select_factor, {
-    print("Handling onchange event for select_factor...")
+    message("Handling onchange event for select_factor...")
 
     ### Updating the main scatter plot ----
     output$plot_scatter <- renderPlotly({
@@ -327,7 +327,7 @@ server <- function(input, output, session) {
   # TODO reconsider if I want to filter this based on selected country TBA
   ### Update DataTable ----
   output$DT_alldata <- renderDT({
-    print("- Updating DT...")
+    message("- Updating DT...")
     happy_data()
   })
 
@@ -346,7 +346,7 @@ server <- function(input, output, session) {
 
   ### Generate Report Button Event ----
   observeEvent(input$btn_report, {
-    print("Report generating...")
+    message("Report generating...")
 
     # handling the report button press
     rmarkdown::render(
@@ -364,7 +364,7 @@ server <- function(input, output, session) {
       paste0(input$select_country, "_", Sys.Date(), ".html")
     },
     content = function(file) {
-      print("Generating automated report...")
+      message("Generating automated report...")
 
       # copy the local Rmd report to a temp file
       tempReport <- file.path(tempdir(), "AutomatedReport.Rmd")
