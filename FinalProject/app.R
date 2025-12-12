@@ -33,7 +33,7 @@ library(rnaturalearthdata)
 #world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data
 
 
-## Start of DashboardPage ----
+## ui definition (dashboardPage) ----
 ui <- dashboardPage(
   title = "World Happiness bs4Dash Page", # TODO where the hell is this title actually output?
   fullscreen = TRUE, # TODO why does this not work?!?!
@@ -228,7 +228,7 @@ ui <- dashboardPage(
   )
 )
 
-## Server Function Call ----
+## Server Function Definition ----
 server <- function(input, output, session) {
 
 
@@ -247,7 +247,7 @@ server <- function(input, output, session) {
   })
 
 
-  ## Update, prune, mutate, clean data, dump into reactive df ----
+  ## Mangle dataset into a dataframe ----
   happy_data <- reactive({
     message("Cleaning up dataset...")
     dat <- df() # TODO get this selected country part working
@@ -259,7 +259,7 @@ server <- function(input, output, session) {
     # TODO left_join world data with the dataset
     #data <- left_join(world, data, by = c("full" = "state.name")) # world is not defined atm
 
-    ### Mutate the data as needed (ensure country names are in agreement between dataset and world map country names ----
+    # Mutate the data as needed (ensure country names are in agreement between dataset and world map country names ----
     # data |> # TODO mutate me !
     #   rename(state.name = full)
 
@@ -269,7 +269,7 @@ server <- function(input, output, session) {
 
   ## Begin updates of dynamic elements  ----
 
-  ### Upload input onchange - update the country dropdown with available countries from dataset
+  ### Upload input onchange ----
   observeEvent(input$file_upload, {
     message("File Upload initiated...")
 
@@ -281,7 +281,7 @@ server <- function(input, output, session) {
     )
   })
 
-  ### Select country onchange - update the plots based on selected country ----
+  ### Select country onchange ----
   observeEvent(input$select_country, {
     message("Select Country select Triggered...")
 
@@ -289,7 +289,7 @@ server <- function(input, output, session) {
     # ie. a is_selected flag with conditional color change or something
     # could also do a mutate(is_selected = ...) kinda thing
 
-    ### Determine the selected country and add a bool col that represents that
+    # Determine the selected country and add a bool col that represents that
     # this is the proper spot to do this mutate for selected country, as it is triggered when a new country is selected
     dat <- happy_data()
     # |>
@@ -310,17 +310,19 @@ server <- function(input, output, session) {
   })
 
 
-  ### Handling a change to the select factor dropdown
+  ### Handling change to select_factor
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
-    ### Updating the main scatter plot ----
+    # Updating the main scatter plot ----
     output$plot_scatter <- renderPlotly({
       dat |>
         ggplot() +
         geom_point(aes(x = `Country`, y = `Happiness Score`)) +
         guides(alpha = "none")
     })
+
+    # update any additional plots that are based on selected factor
   })
 
   # no dynamic change for the Data Table, should be all records, barfed out as is
@@ -344,7 +346,7 @@ server <- function(input, output, session) {
   # })
 
 
-  ### Generate Report Button Event ----
+  ### Report button handling ----
   observeEvent(input$btn_report, {
     message("Report generating...")
 
