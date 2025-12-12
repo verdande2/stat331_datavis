@@ -42,15 +42,17 @@ ui <- dashboardPage(
     elevation = 5,
     sidebarUserPanel(
       name = "General Config",
-      box()
+      box(h2("test"))
     ),
     sidebarMenu(
       id = "sidebar",
-      sidebarHeader("Main Config"),
+      sidebarHeader(
+        title = "Main Config"
+      ),
       menuItem(
-        "Settings",
+        title = "Settings",
         tabName = "main",
-        icon = icon("home"),
+        icon = icon("gear"),
         card(
           fileInput(
             inputId = "upload",
@@ -96,51 +98,53 @@ ui <- dashboardPage(
         fluidRow(
           column(
             6,
-          box(
-            title = "Map",
-            plotlyOutput(
-              outputId = "plot_map",
-              width = "100%",
-              height = "400px"
+            box(
+              title = "Map",
+              plotlyOutput(
+                outputId = "plot_map",
+                width = "100%",
+                height = "400px"
+              )
             )
-          )
           ),
           column(
             6,
-          box(
-            title = "Ranking",
+            box(
+              title = "Ranking",
+              plotlyOutput(
+                outputId = "plot_ranking",
+                width = "100%",
+                height = "400px"
+              )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            6,
             plotlyOutput(
-              outputId = "plot_ranking",
+              outputId = "scatterLife",
+              width = "100%",
+              height = "400px"
+            )
+          ),
+          column(
+            6,
+            plotlyOutput(
+              outputId = "scatterFreedom",
               width = "100%",
               height = "400px"
             )
           )
-          )
-          )
         ),
         fluidRow(
-          column(6,
-                 plotlyOutput(
-            outputId = "scatterLife",
-            width = "100%",
-            height = "400px"
+          column(
+            12,
+            box(
+              title = "Data Table",
+              DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
+            )
           )
-          ),
-          column(6,
-          plotlyOutput(
-            outputId = "scatterFreedom",
-            width = "100%",
-            height = "400px"
-          )
-          )
-        ),
-        fluidRow(
-          column(12,
-                 box(
-            title = "Data Table",
-            DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
-          )
-        )
         )
       )
     )
