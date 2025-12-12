@@ -23,8 +23,8 @@ library(dplyr)
 library(bslib)
 library(bs4Dash)
 library(DT)
-library(rnaturalearth)
-library(rnaturalearthdata)
+#library(rnaturalearth)
+#library(rnaturalearthdata)
 
 #world <- ne_countries(scale = "medium", returnclass = "sf")
 
@@ -41,8 +41,7 @@ ui <- dashboardPage(
     status = "primary",
     elevation = 5,
     sidebarUserPanel(
-      name = "General Config",
-      box(h2("test"))
+      name = "General Config"
     ),
     sidebarMenu(
       id = "sidebar",
@@ -179,99 +178,7 @@ server <- function(input, output, session) {
     return(data)
   })
 
-  # Dynamically fill selectInput when dataset changes
-  observeEvent(input$select_dataset, {
-    req(df())
-    freezeReactiveValue(input, "select_col")
-    updateSelectInput(
-      session,
-      "select_col",
-      choices = names(df()),
-      selected = NULL
-    )
-  })
 
-  output$dynamic_categorical_graphs <- renderUI({
-    req(input$select_col)
-
-    fluidRow(
-      column(
-        6,
-        box(
-          title = "Bar Plot",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("bar_plot")
-        )
-      )
-    )
-  })
-  output$dynamic_numeric_graphs <- renderUI({
-    req(input$select_col)
-
-    fluidRow(
-      column(
-        6,
-        box(
-          title = "Distribution",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("histogram")
-        )
-      ),
-      column(
-        6,
-        box(
-          title = "Box-plot",
-          status = "success",
-          solidHeader = TRUE,
-          plotlyOutput("box_plot")
-        )
-      )
-    )
-  })
-
-  output$box_plot <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(
-        !!sym(input$select_col) >= input$filter_numeric[1] &
-          !!sym(input$select_col) <= input$filter_numeric[2]
-      ) %>%
-      ggplot(aes(y = !!sym(input$select_col), )) +
-      geom_boxplot()
-
-    ggplotly(plt)
-  })
-
-  output$histogram <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(
-        !!sym(input$select_col) >= input$filter_numeric[1] &
-          !!sym(input$select_col) <= input$filter_numeric[2]
-      ) %>%
-      ggplot(aes(x = !!sym(input$select_col))) +
-      geom_histogram()
-
-    ggplotly(plt)
-  })
-
-  output$bar_plot <- renderPlotly({
-    req(input$select_col)
-
-    plt <- df() %>%
-      select(!!sym(input$select_col)) %>%
-      filter(!!sym(input$select_col) %in% input$filter_categorical) %>%
-      ggplot(aes(x = !!sym(input$select_col))) +
-      geom_bar()
-
-    ggplotly(plt)
-  })
 }
 
 shinyApp(ui, server)
