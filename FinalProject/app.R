@@ -388,5 +388,5 @@ server <- function(input, output, session) {
 }
 
 
-### Shiny app call ----
+### Shiny App Function call ----
 shinyApp(ui, server)
