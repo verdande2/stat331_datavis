@@ -7,7 +7,8 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       id = "sidebar",
-      menuItem("Columns",
+      menuItem(
+        "Columns",
         tabName = "select_variable",
         icon = icon("dashboard")
       ),
@@ -68,14 +69,13 @@ server <- function(input, output, session) {
   df <- reactive({
     req(input$select_dataset)
 
-
     print("in df reactive")
-    switch(input$select_dataset,
+    switch(
+      input$select_dataset,
       "diamonds" = diamonds,
       "mtcars" = mtcars,
       "iris" = iris
     )
-
 
     observeEvent(input$select_dataset, {
       req(df())
@@ -107,7 +107,9 @@ server <- function(input, output, session) {
 
     if (common_class %in% c("double", "integer", "numeric")) {
       return("numeric")
-    } else if (common_class %in% c("character", "factor", "ordered", "logical")) {
+    } else if (
+      common_class %in% c("character", "factor", "ordered", "logical")
+    ) {
       return("categorical")
     } else {
       return("special")
@@ -132,7 +134,6 @@ server <- function(input, output, session) {
     common_class <- max(class(col_data[[1]]))
     print(common_class)
 
-
     if (common_class %in% c("double", "integer", "numeric")) {
       updateSliderInput(
         session = session,
@@ -141,7 +142,9 @@ server <- function(input, output, session) {
         max = max(col_data),
         value = c(quantile(col_data, 0.25)[[1]], quantile(col_data, 0.75)[[1]])
       )
-    } else if (common_class %in% c("character", "factor", "ordered", "logical")) {
+    } else if (
+      common_class %in% c("character", "factor", "ordered", "logical")
+    ) {
       updateCheckboxGroupInput(
         session = session,
         inputId = "filter_categorical",
@@ -162,7 +165,6 @@ server <- function(input, output, session) {
       )
     )
   })
-
 
   output$dynamic_numeric_graphs <- renderUI({
     req(input$select_col)

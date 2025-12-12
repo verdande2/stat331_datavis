@@ -37,7 +37,8 @@ ui <- fluidPage(
     ),
     mainPanel(
       navset_tab(
-        nav_panel("Car Dataset Vis Dashboard",
+        nav_panel(
+          "Car Dataset Vis Dashboard",
           fluidRow(plotlyOutput(outputId = "scatter_1")),
           fluidRow(
             column(
@@ -78,12 +79,12 @@ server <- function(input, output, session) {
     fil <- filtered_data() # alias filtered_data() to fil
 
     # plot the data speed vs dist, add labels and scatterplot points
-    fig <- ggplot(fil, aes(x = speed, y = dist) ) +
+    fig <- ggplot(fil, aes(x = speed, y = dist)) +
       labs(title = "Speed vs Distance", x = "Speed", y = "Distance") +
       geom_point()
 
     # if the "Fit Regression Line" checkbox is checked, draw the regression line
-    if(input$checkbox_regression){
+    if (input$checkbox_regression) {
       fig <- fig + geom_smooth(method = "loess", formula = "Speed ~ Dist")
     }
 
@@ -93,8 +94,7 @@ server <- function(input, output, session) {
 
   output$histogram_1 <- renderPlotly({
     fil <- filtered_data()
-    fig <- fil |> ggplot(aes(x = speed)) +
-      geom_histogram()
+    fig <- fil |> ggplot(aes(x = speed)) + geom_histogram()
 
     ggplotly(fig)
   })
@@ -113,9 +113,8 @@ server <- function(input, output, session) {
     fil <- filtered_data()
     x <- cor(fil) # calc corr coeff for speed/dist
     x <- round(x, 3) # truncate off the correlation coeff to 3 decimal places
-    paste("The correlation between speed and distance is ", x[2], ".", sep="") # slam together the string with data
+    paste("The correlation between speed and distance is ", x[2], ".", sep = "") # slam together the string with data
   })
-
 
   # on second tab, for filtering debug
   output$filtered_data_table <- renderDataTable(expr = filtered_data())
