@@ -24,9 +24,9 @@ library(dplyr)
 library(bslib)
 library(bs4Dash)
 library(DT)
-#library(rworldmap) # TODO figure this world map shit out... urgh
-#library(rnaturalearth)
-#library(rnaturalearthdata)
+library(rworldmap) # TODO figure this world map shit out... urgh
+library(rnaturalearth)
+library(rnaturalearthdata)
 
 
 ## Global Variables ----
@@ -47,13 +47,13 @@ ui <- dashboardPage(
 
   ## Sidebar ----
   sidebar = dashboardSidebar( # TODO figure out how to increase the width of the sidemenu
-    # Custom CSS Tweaks
+    # Custom CSS Tweaks TODO this custom CSS does not in fact help any of the issues I was hoping it would. Fuck.
     tags$head(
       tags$style(HTML("
         /* Ensure the dropdown menu appears above other elements */
         .sidebar .bs4-dropdown-menu {
           position: absolute !important;
-          border: 1px red solid !important;
+          border: 10px red solid !important;
           z-index: 1060 !important; /* Higher than typical content z-index */
         }
         /* If using shiny inputs like pickerInput or selectInput, target their dropdowns */
@@ -92,26 +92,27 @@ ui <- dashboardPage(
         tabName = "main",
         icon = icon("gear"),
         column(12,
-               card(
-          fileInput(
-            inputId = "file_upload",
-            label = "Load Data File",
-            multiple = FALSE
+          card(
+            fileInput(
+              inputId = "file_upload",
+              label = "Load Data File",
+              multiple = FALSE
+            )
+          ),
+          card(
+            selectInput(
+              inputId = "select_country",
+              label = "Choose Country",
+              choices = ""
+            )
           )
-        ),
-        card(
-          selectInput(
-            inputId = "select_country",
-            label = "Choose Country",
-            choices = "United States"
-          )
-        )
         )
       ),
 
       menuItem(
         "Reporting",
         tabName = "report",
+        icon = icon("bug"),
         card(
           checkboxInput(
             "show_linear_regression",
@@ -130,15 +131,25 @@ ui <- dashboardPage(
   ## Body ----
   body = dashboardBody(
     tabItems(
-      ### Main Tab with main scatter plot ----
+
+      ### Main Tab ----
       tabItem(
         tabName = "main",
         fluidRow(
           column(
             12,
-            ### Master Scatter Plot ----
+
+            ### Scatter Plot ----
             box(
-              title = "Scatter Plot",
+              conditionalPanel(condition = "input.select_country != ''",
+                title = "Scatter Plot",
+                selectInput(
+                  inputId = "selected_factor",
+                  label = "Selected Factor:",
+                  multiple = FALSE,
+                  choices = "---Choose a Country to the Left---"
+                )
+              ),
               plotlyOutput(
                 outputId = "plot_scatter",
                 width = "100%",
@@ -150,6 +161,7 @@ ui <- dashboardPage(
         fluidRow(
           column(
             6,
+
             ### World Map ----
             box(
               title = "Map",
@@ -162,6 +174,7 @@ ui <- dashboardPage(
           ),
           column(
             6,
+
             ### World Ranking ----
             box(
               title = "Ranking",
@@ -173,6 +186,7 @@ ui <- dashboardPage(
             )
           )
         ),
+
         ### Additional Plots ----
         # fluidRow(
         #   column(
@@ -195,6 +209,7 @@ ui <- dashboardPage(
         fluidRow(
           column(
             12,
+
             ### Datatable output ----
             box(
               title = "Data Table",
@@ -219,6 +234,7 @@ server <- function(input, output, session) {
 
   ## Handle file upload ----
   df <- reactive({
+    print("Detected file upload...")
     req(input$file_upload) # required id upload
 
     ext <- tools::file_ext(input$file_upload$name)
@@ -233,6 +249,7 @@ server <- function(input, output, session) {
 
   ## Update, prune, mutate, clean data, dump into reactive df ----
   happy_data <- reactive({
+    print("Cleaning up dataset...")
     dat <- df() # TODO get this selected country part working
     # |>
     #   mutate( # selected country gets a "Y" entry for the highlight_country col
@@ -254,9 +271,10 @@ server <- function(input, output, session) {
 
   ### Upload input onchange - update the country dropdown with available countries from dataset
   observeEvent(input$file_upload, {
-    print("File Upload Triggered!")
+    print("File Upload initiated...")
 
     # update the country selector with the choices from the dataset
+    print("Updating the select_country element with the list of countries...")
     updateSelectInput(
       inputId = "select_country",
       choices = unique(happy_data()$Country) # unique to remove duplicates
@@ -265,7 +283,7 @@ server <- function(input, output, session) {
 
   ### Select country onchange - update the plots based on selected country ----
   observeEvent(input$select_country, {
-    print("Select Country select Triggered!")
+    print("Select Country select Triggered...")
 
     # TODO add a way to show the selected country in each plot
     # ie. a is_selected flag with conditional color change or something
@@ -279,20 +297,37 @@ server <- function(input, output, session) {
     #     highlight_country = if_else(Country == input$select_country, "Y", "N")
     #   ) # TODO figure this shit out with selected country
 
-    # before
+    # get a vector of the available factors
+    v <- c() # TODO fill this out with factor column names
 
-    ### Updating the main scatter plot ----
-    output$plot_scatter <- renderPlot({
-        plot(dat, dat$Country)
-      }
+    # populate the select_factor dropdown with available factors
+    print("- Updating the choices in the select_factor dropdown...")
+    updateSelectInput(
+      inputId = "select_factor",
+      choices = v
     )
+
   })
 
 
+  ### Handling a change to the select factor dropdown
+  observeEvent(input$select_factor, {
+    print("Handling onchange event for select_factor...")
+
+    ### Updating the main scatter plot ----
+    output$plot_scatter <- renderPlotly({
+      dat |>
+        ggplot() +
+        geom_point(aes(x = `Country`, y = `Happiness Score`)) +
+        guides(alpha = "none")
+    })
+  })
+
   # no dynamic change for the Data Table, should be all records, barfed out as is
   # TODO reconsider if I want to filter this based on selected country TBA
+  ### Update DataTable ----
   output$DT_alldata <- renderDT({
-    print("Updating DT")
+    print("- Updating DT...")
     happy_data()
   })
 
@@ -311,7 +346,7 @@ server <- function(input, output, session) {
 
   ### Generate Report Button Event ----
   observeEvent(input$btn_report, {
-    print("Report generating!")
+    print("Report generating...")
 
     # handling the report button press
     rmarkdown::render(
@@ -321,12 +356,15 @@ server <- function(input, output, session) {
     )
   })
 
+
+  ### Download handler ----
   output$btn_report <- downloadHandler(
     # example filename: United States_2025-12-12.html # TODO look into replacing spaces with underscores in filename
     filename = function() {
       paste0(input$select_country, "_", Sys.Date(), ".html")
     },
     content = function(file) {
+      print("Generating automated report...")
 
       # copy the local Rmd report to a temp file
       tempReport <- file.path(tempdir(), "AutomatedReport.Rmd")
@@ -347,4 +385,6 @@ server <- function(input, output, session) {
   )
 }
 
+
+### Shiny app call ----
 shinyApp(ui, server)
