@@ -20,77 +20,143 @@ library(shinydashboard)
 library(plotly)
 library(ggplot2)
 library(dplyr)
+library(bslib)
+library(bs4Dash)
+library(DT)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
 
 # Load dataset
 
 ui <- dashboardPage(
-  dashboardHeader(title = "World Happiness Ranking Dashboard"),
-  dashboardSidebar(
+  title = "World Happiness bs4Dash Page",
+  fullscreen = TRUE,
+  header = dashboardHeader(
+    title = "World Happiness Ranking Dashboard"
+  ),
+  sidebar = dashboardSidebar(
+    collapsed = FALSE,
+    status = "primary",
+    elevation = 5,
+    sidebarUserPanel(
+      name = "General Config",
+      box()
+    ),
     sidebarMenu(
       id = "sidebar",
+      sidebarHeader("Main Config"),
       menuItem(
         "Settings",
-        tabName = "main"
+        tabName = "main",
+        icon = icon("home"),
+        card(
+          fileInput(
+            inputId = "upload",
+            label = "Select Data File",
+            multiple = FALSE
+          )
+        )
       ),
       menuItem(
-        "Another tab",
-        tabName = "second"
-      )
-    )
-  ),
-  dashboardBody(
-    tabItems(
-      tabItem(
-        tabName = "main",
-        fluidRow(
-          fluidRow(
-            plotlyOutput(
-              outputId = "plotScatter",
-              width = "100%",
-              height = "400px"
-            )
+        "Reporting",
+        tabName = "report",
+        card(
+          selectInput(
+            inputId = "myCountry",
+            label = "Choose Country",
+            choices = ""
           ),
-          fluidRow(
-            plotlyOutput(
-              outputId = "scatterGDP",
-              width = "100%",
-              height = "400px"
-            ),
-            plotlyOutput(
-              outputId = "scatterCorruption",
-              width = "100%",
-              height = "400px"
-            )
-          ),
-          fluidRow(
-            plotlyOutput(
-              outputId = "scatterLife",
-              width = "100%",
-              height = "400px"
-            ),
-            plotlyOutput(
-              outputId = "scatterFreedom",
-              width = "100%",
-              height = "400px"
-            )
+          downloadButton(
+            outputId = "report",
+            label = "Generate Report"
           )
         )
       )
     )
-  )
+  ),
+  body = dashboardBody(
+    tabItems(
+      tabItem(
+        tabName = "main",
+        fluidRow(
+          box(
+            title = "Scatter Plot",
+            plotlyOutput(
+              outputId = "plot_scatter",
+              width = "100%",
+              height = "400px"
+            )
+          ),
+        ),
+        fluidRow(
+          box(
+            title = "Map",
+            plotlyOutput(
+              outputId = "plot_map",
+              width = "100%",
+              height = "400px"
+            )
+          ),
+          box(
+            title = "Ranking",
+            plotlyOutput(
+              outputId = "plot_ranking",
+              width = "100%",
+              height = "400px"
+            )
+          )
+        ),
+        fluidRow(
+          plotlyOutput(
+            outputId = "scatterLife",
+            width = "100%",
+            height = "400px"
+          ),
+          plotlyOutput(
+            outputId = "scatterFreedom",
+            width = "100%",
+            height = "400px"
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Data Table",
+            DTOutput(outputId = "myTable", width = "100%") # TODO figure out how to adjust overflow settings so it doesn't overflow and barf text all over
+          )
+        )
+      )
+    )
+  ),
+  footer = dashboardFooter("test")
 )
 
 
 server <- function(input, output, session) {
-  # Dynamically load and filter dataset
+  # Read Data from File based on user choice ----
   df <- reactive({
-    req(input$select_dataset)
+    req(input$upload) # required id upload
 
-    switch(input$select_dataset,
-      "diamonds" = diamonds,
-      "mtcars" = mtcars,
-      "iris" = iris
+    ext <- tools::file_ext(input$upload$name)
+    switch(
+      ext,
+      csv = vroom::vroom(input$upload$datapath, delim = ","),
+      tsv = vroom::vroom(input$upload$datapath, delim = "\t"),
+      validate("Invalid file; Please upload a .csv or .tsv file")
     )
+  })
+
+  ## Update data ----
+  happy_data <- reactive({
+    data <- df()
+
+    data <- left_join(world, data, by = c("full" = "state.name")) |>
+      rename(state.name = full)
+
+    return(data)
   })
 
   # Dynamically fill selectInput when dataset changes

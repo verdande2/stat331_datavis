@@ -43,15 +43,15 @@ readr::spec(happy_data)
 ```
 
 ```{r mangle_data_part_one, include = FALSE}
-# TODO do me!
+# first plot will be a scatter plot, plotting happiness score vs Economy (GDP per Capita) in 2016, showing possible relation between GDP and happiness
 ```
 
 ```{r mangle_data_part_two, include = FALSE}
-# TODO do me!
+# second plot will be a scatter plot, plotting happiness score vs Trust (Government Corruption) in 2016
 ```
 
 ```{r mangle_data_part_three, include = FALSE}
-# TODO do me!
+# third plot will be line plot showing USA happiness score from 2015-2016
 ```
 
 ```{r plot_one}
