@@ -5,18 +5,19 @@ output:
   html_document:
     theme: cerulean
     code_folding: hide
+  word_document: default
+  pdf_document: default
 
 params:
-  data: happy_data(), # TODO this is a problem point. Need cases passed, but unsure how to pass a "default" so to speak
-  filter: total_cases # TODO update this
+  cases: happy_data(), # TODO this is a problem point. Need cases passed, but unsure how to pass a "default" so to speak
+  dat:
   country: 
     label: "Country"
-    value: Alaska
-    input: select
-    choices: !r append(state.name, "District of Columbia")
+    value: United States
+    
     
 title: "`r params$country` Happiness Report"         
-subtitle: "World Happiness Ranking"
+subtitle: "World Happiness Report"
 ---
 
 
@@ -44,105 +45,149 @@ library(fmsb)
 
 ```
 
-```{r data_load_and_prep}
-cases <- tibble(state.name) %>%
-  rbind(state.name = "District of Columbia") %>%
-  left_join(
-    read_csv(
-      "united_states_covid19_cases_deaths_and_testing_by_state.csv"
-    ),
-    by = c("state.name" = "State/Territory")
-  ) %>%
-  rename(
-    total_cases = `Total Cases`,
-    cases_per_100000 = `Case Rate per 100000` 
-  ) %>%
-  mutate(case_rank = rank(-cases_per_100000, ties.method = "min"))
+```{r data_prep}
+# cases <- tibble(state.name) %>%
+#   rbind(state.name = "District of Columbia") %>%
+#   left_join(
+#     read_csv(
+#       "united_states_covid19_cases_deaths_and_testing_by_state.csv"
+#     ),
+#     by = c("state.name" = "State/Territory")
+#   ) %>%
+#   rename(
+#     total_cases = `Total Cases`,
+#     cases_per_100000 = `Case Rate per 100000` 
+#   ) %>%
+#   mutate(case_rank = rank(-cases_per_100000, ties.method = "min"))
 ```
 
-```{r pull_out_variables_individually}
-state_text <- if_else(params$state == "District of Columbia", str_glue("the District of Columbia"), str_glue("state of {params$state}"))
-
-state_cases_per_100000 <- cases %>%
-  filter(state.name == params$state) %>%
-  pull(cases_per_100000) %>%
-  comma()
-
-state_cases_rank <- cases %>%
-  filter(state.name == params$state) %>%
-  pull(case_rank)
+```{r special_cases_and_pulling_single_vars}
+# state_text <- if_else(params$state == "District of Columbia", str_glue("the District of Columbia"), str_glue("state of {params$state}"))
+# 
+# state_cases_per_100000 <- cases %>%
+#   filter(state.name == params$state) %>%
+#   pull(cases_per_100000) %>%
+#   comma()
+# 
+# state_cases_rank <- cases %>%
+#   filter(state.name == params$state) %>%
+#   pull(case_rank)
 ```
 
-In `r state_text`, there were `r state_cases_per_100000` cases per 100,000 people in the last seven days. This puts `r params$state` at number `r state_cases_rank` of 50 states and the District of Columbia.
+In `r params$country`, there were BLAH cases . This puts `r params$country` at number [RANK here]
 
-```{r make_the_map_happen}
-map <- us_map()
-cases %>%
-            left_join(map, by = join_by(state.name == full)) %>%
-            mutate(highlight_state = if_else(state.name == params$state, "Y", "N")) %>%
-            mutate(state.name = fct_reorder(state.name, cases_per_100000)) %>%
-            ggplot() +
-            geom_sf(aes(geometry = geom, fill = cases_per_100000, alpha = highlight_state)) +
-            scale_fill_gradient(low = "white", high = "blue") +
-            guides(alpha = "none")
-```
-
-
-
-```{r label_vectors_for_later}
-    pcol=c('blue', 'red' )
-    pfcol= alpha(pcol,0.4)
-
-totals_vec <- c("state.name", "total_cases", "Total Deaths", "Total # Tests")
-seven_vec <- c("state.name", "Cases in Last 7 Days", "Deaths in Last 7 Days", "Total # Tests Last 7 Days", "case_rank")
-per_100000_vec <- c("state.name", "cases_per_100000", "Death Rate per 100000", "7-Day Cases Rate per 100000", "# Tests per 100K", "case_rank")
-
+```{r plot_the_map}
+# map <- us_map()
+# cases %>%
+#             left_join(map, by = join_by(state.name == full)) %>%
+#             mutate(highlight_state = if_else(state.name == params$state, "Y", "N")) %>%
+#             mutate(state.name = fct_reorder(state.name, cases_per_100000)) %>%
+#             ggplot() +
+#             geom_sf(aes(geometry = geom, fill = cases_per_100000, alpha = highlight_state)) +
+#             scale_fill_gradient(low = "white", high = "blue") +
+#             guides(alpha = "none")
 ```
 
 
 
-```{r compare_to_average fig.height = 8}
-cases %>%
-      mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
-      bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
-      mutate(state.name = replace_na(state.name, "Mean")) %>%
-      bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
-      mutate(state.name = replace_na(state.name, "Min")) %>%
-      bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
-      mutate(state.name = replace_na(state.name, "Max")) %>%
-      arrange(match(state.name,c('Max','Min'))) %>%
-      select(all_of(per_100000_vec)) %>%
-      data.frame() %>%
-      filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
-      column_to_rownames('state.name') %>%
-      radarchart(centerzero = TRUE,
-                 title = "Comparison of State with the Average",
-                 pcol = pcol, 
-                 pfcol = pfcol
-                 ) 
-      legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
+```{r various_variables}
+#     pcol=c('blue', 'red' )
+#     pfcol= alpha(pcol,0.4)
+# 
+# totals_vec <- c("state.name", "total_cases", "Total Deaths", "Total # Tests")
+# seven_vec <- c("state.name", "Cases in Last 7 Days", "Deaths in Last 7 Days", "Total # Tests Last 7 Days", "case_rank")
+# per_100000_vec <- c("state.name", "cases_per_100000", "Death Rate per 100000", "7-Day Cases Rate per 100000", "# Tests per 100K", "case_rank")
 
 ```
 
 
 
-```{r death_map}
-selection = "Total Deaths"
+```{r radar_chart, fig.height = 8}
+# cases %>%
+#       mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Mean")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Max")) %>%
+#       arrange(match(state.name,c('Max','Min'))) %>%
+#       select(all_of(per_100000_vec)) %>%
+#       data.frame() %>%
+#       filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
+#       column_to_rownames('state.name') %>%
+#       radarchart(centerzero = TRUE,
+#                  title = "Comparison of State with the Average",
+#                  pcol = pcol, 
+#                  pfcol = pfcol
+#                  ) 
+#       legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
 
-cases %>%
-         mutate(highlight_state = if_else(state.name == params$state, "Y", "N")) %>%
-         mutate(state.name = fct_reorder(state.name, get(selection))) %>%
-         ggplot(aes(x = get(selection),
-                    y = state.name,
-                    fill = highlight_state
-         )
-         ) +
-         geom_col() +
-         scale_x_continuous(labels = comma_format()) +
-         theme(legend.position = "none") +
-         labs(
-              y = NULL,
-              x = selection
-         )
+```
+
+```{r radar_chart_two}
+# cases %>%
+#       mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Mean")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Max")) %>%
+#       arrange(match(state.name,c('Max','Min'))) %>%
+#       select(all_of(totals_vec)) %>%
+#       data.frame() %>%
+#       filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
+#       column_to_rownames('state.name') %>%
+#       radarchart(centerzero = TRUE,
+#                  title = "Comparison of State with the Average",
+#                  pcol = pcol, 
+#                  pfcol = pfcol
+#                  ) 
+#       legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
+```
+```{r radar_chart_three}
+# cases %>%
+#       mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Mean")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Min")) %>%
+#       bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
+#       mutate(state.name = replace_na(state.name, "Max")) %>%
+#       arrange(match(state.name,c('Max','Min'))) %>%
+#       select(all_of(seven_vec)) %>%
+#       data.frame() %>%
+#       filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
+#       column_to_rownames('state.name') %>%
+#       radarchart(centerzero = TRUE,
+#                  title = "Comparison of State with the Average",
+#                  pcol = pcol, 
+#                  pfcol = pfcol
+#                  ) 
+#       legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
+```
+
+
+
+
+```{r plot_metrics}
+# selection = "Total Deaths"
+# 
+# cases %>%
+#          mutate(highlight_state = if_else(state.name == params$state, "Y", "N")) %>%
+#          mutate(state.name = fct_reorder(state.name, get(selection))) %>%
+#          ggplot(aes(x = get(selection),
+#                     y = state.name,
+#                     fill = highlight_state
+#          )
+#          ) +
+#          geom_col() +
+#          scale_x_continuous(labels = comma_format()) +
+#          theme(legend.position = "none") +
+#          labs(
+#               y = NULL,
+#               x = selection
+#          )
 ```
 
