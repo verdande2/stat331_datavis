@@ -29,7 +29,7 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 
 ## Global Variables ----
-#world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data
+world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data
 
 ## ui definition (dashboardPage) ----
 ui <- dashboardPage(
@@ -134,90 +134,99 @@ ui <- dashboardPage(
       ### Main Tab ----
       tabItem(
         tabName = "main",
-        fluidRow(
-          column(
-            12,
+        conditionalPanel(
+          condition = "input.select_country != ''",
 
-            ### Scatter Plot ----
-            box(
-              id = "box_plot_scatter",
-              title = "Scatter Plot",
-              conditionalPanel(
-                condition = "input.select_country != ''",
+          fluidRow(
+            column(
+              12,
+
+              ### Scatter Plot ----
+              box(
+                id = "box_plot_scatter",
+                title = "Scatter Plot",
                 selectInput(
                   inputId = "select_factor",
                   label = "Selected Factor:",
                   multiple = FALSE,
                   choices = ""
-                )
-              ),
-              plotlyOutput(
-                outputId = "plot_scatter",
-                width = "100%",
-                height = "400px"
-              )
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            6,
+                ),
 
-            ### World Map ----
-            box(
-              title = "Map",
-              plotlyOutput(
-                outputId = "plot_map",
-                width = "100%",
-                height = "400px"
+                plotlyOutput(
+                  outputId = "plot_scatter",
+                  width = "100%",
+                  height = "400px"
+                )
               )
             )
           ),
-          column(
-            6,
+          fluidRow(
+            column(
+              6,
 
-            ### World Ranking ----
-            box(
-              title = "Ranking",
-              plotlyOutput(
-                outputId = "plot_ranking",
-                width = "100%",
-                height = "400px"
+              ### World Map ----
+              box(
+                title = "Map",
+                plotlyOutput(
+                  outputId = "plot_map",
+                  width = "100%",
+                  height = "400px"
+                )
+              )
+            ),
+            column(
+              6,
+
+              ### World Ranking ----
+              box(
+                title = "World Ranking",
+                plotlyOutput(
+                  outputId = "plot_ranking",
+                  width = "100%",
+                  height = "400px"
+                )
+              )
+            )
+          ),
+
+          ### Additional Plots ----
+          # fluidRow(
+          #   column(
+          #     6,
+          #     plotlyOutput(
+          #       outputId = "scatterLife",
+          #       width = "100%",
+          #       height = "400px"
+          #     )
+          #   ),
+          #   column(
+          #     6,
+          #     plotlyOutput(
+          #       outputId = "scatterFreedom",
+          #       width = "100%",
+          #       height = "400px"
+          #     )
+          #   )
+          # ),
+          fluidRow(
+            column(
+              12,
+
+              ### DataTable output ----
+              box(
+                title = "Data Table",
+                width = 12,
+                DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
               )
             )
           )
-        ),
-
-        ### Additional Plots ----
-        # fluidRow(
-        #   column(
-        #     6,
-        #     plotlyOutput(
-        #       outputId = "scatterLife",
-        #       width = "100%",
-        #       height = "400px"
-        #     )
-        #   ),
-        #   column(
-        #     6,
-        #     plotlyOutput(
-        #       outputId = "scatterFreedom",
-        #       width = "100%",
-        #       height = "400px"
-        #     )
-        #   )
-        # ),
-        fluidRow(
-          column(
-            12,
-
-            ### Datatable output ----
-            box(
-              title = "Data Table",
-              DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
-            )
-          )
         )
+      ),
+
+      ## Second Tab ----
+      tabItem(
+        tabName = "other",
+        "test"
       )
     )
   ),
@@ -239,8 +248,13 @@ server <- function(input, output, session) {
     ext <- tools::file_ext(input$file_upload$name)
     switch(
       ext,
-      csv = vroom::vroom(input$file_upload$datapath, delim = ","),
-      tsv = vroom::vroom(input$file_upload$datapath, delim = "\t"),
+      csv = vroom::vroom(
+        input$file_upload$datapath,
+        delim = ",",
+        progress = FALSE,
+        show_col_types = FALSE,
+        col_types = cols()
+      ),
       validate("Invalid file; Please upload a .csv or .tsv file")
     )
   })
@@ -264,7 +278,36 @@ server <- function(input, output, session) {
     return(dat)
   })
 
-  ## Begin updates of dynamic elements  ----
+  ## Update static elements ----
+
+  # no dynamic change for the Data Table, should be all records, barfed out as is
+  # TODO reconsider if I want to filter this based on selected country TBA
+  # TODO sort the datatable by happiness rank
+  ### Update DataTable ----
+  output$DT_alldata <- renderDT({
+    message("Updating DataTable...")
+    happy_data()
+  })
+
+  # get a vector of the available factors
+  v <- c(
+    "Economy (GDP per Capita)",
+    "Family",
+    "Health (Life Expectancy)",
+    "Freedom",
+    "Trust (Government Corruption)",
+    "Generosity",
+    "Dystopia Residual"
+  )
+
+  ### Populate the select_factor select with available factors ----
+  message("Updating the choices in the select_factor dropdown...")
+  updateSelectInput(
+    inputId = "select_factor",
+    choices = v
+  )
+
+  ## Update dynamic elements  ----
 
   ### Upload input onchange ----
   observeEvent(input$file_upload, {
@@ -280,7 +323,7 @@ server <- function(input, output, session) {
 
   ### Select country onchange ----
   observeEvent(input$select_country, {
-    message("Select Country select Triggered...")
+    message("select_country Triggered...")
 
     # TODO add a way to show the selected country in each plot
     # ie. a is_selected flag with conditional color change or something
@@ -293,24 +336,6 @@ server <- function(input, output, session) {
     #   mutate(
     #     highlight_country = if_else(Country == input$select_country, "Y", "N")
     #   ) # TODO figure this shit out with selected country
-
-    # get a vector of the available factors
-    v <- c(
-      "Economy (GDP per Capita)",
-      "Family",
-      "Health (Life Expectancy)",
-      "Freedom",
-      "Trust (Government Corruption)",
-      "Generosity",
-      "Dystopia Residual"
-    ) # TODO fix this
-
-    # populate the select_factor dropdown with available factors
-    message("- Updating the choices in the select_factor dropdown...")
-    updateSelectInput(
-      inputId = "select_factor",
-      choices = v
-    )
   })
 
   ### Handling change to select_factor
@@ -320,9 +345,14 @@ server <- function(input, output, session) {
     # Updating the main scatter plot ----
     output$plot_scatter <- renderPlotly({
       happy_data() |>
-        #select(c(input$select_factor)) |> # we use the chosen factor to filter out the extraneous data
+        #select(c(input$select_factor)) |> # TODO fix me! we use the chosen factor to filter out the extraneous data
         ggplot() +
-        geom_point(aes(x = `Country`, y = `Happiness Score`)) +
+        geom_point(
+          aes(
+            x = `Country`,
+            y = `Happiness Score`
+          )
+        ) +
         guides()
     })
 
@@ -345,14 +375,6 @@ server <- function(input, output, session) {
     # update any additional plots that are based on selected factor
   })
 
-  # no dynamic change for the Data Table, should be all records, barfed out as is
-  # TODO reconsider if I want to filter this based on selected country TBA
-  ### Update DataTable ----
-  output$DT_alldata <- renderDT({
-    message("- Updating DT...")
-    happy_data()
-  })
-
   ### Update world map plot ----
   # TODO update this after I can successfully join the world map data with the dataset
   # output$plot_map <- renderPlotly({
@@ -364,6 +386,38 @@ server <- function(input, output, session) {
   #     scale_fill_gradient(low = "white", high = "blue") +
   #     guides(alpha = "none")
   # })
+
+  ### Update World Ranking plot
+  output$plot_ranking <- renderPlotly({
+    selection <- input$select_country
+    happy_data() |>
+      mutate(
+        highlight_country = if_else(Country == input$select_country, "Y", "N")
+      ) |>
+      # mutate(
+      #   Country = fct_reorder(Country, `Happiness Rank`) # this appears to reorder factors based on the sort of country, then happiness rank? Google this
+      # ) |>
+      #
+      # TODO add a limit 35 or so, or paginate
+      ggplot(
+        aes(
+          x = `Happiness Rank`,
+          y = Country,
+          fill = highlight_country
+        )
+      ) +
+      geom_col() +
+      scale_x_continuous(
+        labels = comma_format()
+      ) +
+      theme(
+        legend.position = "none"
+      ) +
+      labs(
+        y = NULL,
+        x = "Happiness Rank"
+      )
+  })
 
   ### Report button handling ----
   observeEvent(input$btn_report, {
