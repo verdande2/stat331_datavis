@@ -149,7 +149,7 @@ ui <- dashboardPage(
                   inputId = "select_factor",
                   label = "Selected Factor:",
                   multiple = FALSE,
-                  choices = "---Choose a Country to the Left---"
+                  choices = ""
                 )
               ),
               plotlyOutput(
@@ -328,15 +328,15 @@ server <- function(input, output, session) {
     })
 
     # update the box title for the scatter plot as well
-    # TODO make this conditional based on if select_factor is empty/default
-    updateBox(id = "box_plot_scatter",
-      action = "update",
-      options = list(
-        title = paste("Scatter Plot of ", input$select_factor, " and the resulting Happiness Score"), # TODO make this actually show a proper title
-        solidHeader = TRUE,
-        width = 4
+    if(input$select_factor != ""){ # if something is actually selected
+      updateBox(
+        id = "box_plot_scatter",
+        action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
+        options = list(
+          title = paste("Scatter Plot of ", input$select_factor, " and the resulting Happiness Score") # TODO make this actually show a proper title
+        )
       )
-    )
+    }
 
     # update any additional plots that are based on selected factor
   })
