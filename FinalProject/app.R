@@ -39,7 +39,10 @@ ui <- dashboardPage(
   ## Header ----
   header = dashboardHeader(
     title = "World Happiness Dashboard",
-    compact = TRUE
+    titleWidth = 400,
+    compact = TRUE,
+    border = TRUE,
+    status = "purple"
   ),
 
   ## Sidebar ----
@@ -92,7 +95,7 @@ ui <- dashboardPage(
         tabName = "main",
         icon = icon("gear"),
         column(
-          12,
+          12, # TODO figure out wtf I'm doing wrong with the col widths. 12 should be full width.... I must be missing something, or I'm retarded. Who knows.
           card(
             fileInput(
               inputId = "file_upload",
@@ -225,7 +228,7 @@ ui <- dashboardPage(
 
       ## Second Tab ----
       tabItem(
-        tabName = "other",
+        tabName = "report",
         "test"
       )
     )
@@ -240,6 +243,27 @@ ui <- dashboardPage(
 
 ## Server Function Definition ----
 server <- function(input, output, session) {
+  ### help dialog toggle ----
+  observe({
+    if (input$help_switch == TRUE) {
+      if (input$sidebar == "main") {
+        shiny::showModal(
+          ui = shiny::modalDialog(
+            title = "Help",
+            "Help Contents Here"
+          )
+        )
+      } else if (input$sidebar == "report") {
+        shiny::showModal(
+          ui = shiny::modalDialog(
+            title = "Help: Reports",
+            "Help info for report settings"
+          )
+        )
+      }
+    }
+  })
+
   ## Handle file upload ----
   df <- reactive({
     message("Detected file upload...")
@@ -342,7 +366,7 @@ server <- function(input, output, session) {
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
-    # Updating the main scatter plot ----
+    # Updating scatter plot ----
     output$plot_scatter <- renderPlotly({
       happy_data() |>
         #select(c(input$select_factor)) |> # TODO fix me! we use the chosen factor to filter out the extraneous data
@@ -445,7 +469,7 @@ server <- function(input, output, session) {
       file.copy("AutomatedReport.Rmd", tempReport, overwrite = TRUE)
       params <- list(
         country = input$select_country,
-        dat = happy_data() # TODO determine if I should filter this down before sending to report rmd
+        dat = happy_data() # TODO determine if I should filter this down before sending to report rmd, answer: duh, dumb shit, do it
       )
 
       # barf out the rendered file
