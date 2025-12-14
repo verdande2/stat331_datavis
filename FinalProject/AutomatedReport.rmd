@@ -45,25 +45,25 @@ library(fmsb)
 
 ```
 
+```{r global_variables}
+world = 
+```
+
 ```{r data_prep}
-# cases <- tibble(state.name) %>%
-#   rbind(state.name = "District of Columbia") %>%
-#   left_join(
-#     read_csv(
-#       "united_states_covid19_cases_deaths_and_testing_by_state.csv"
-#     ),
-#     by = c("state.name" = "State/Territory")
-#   ) %>%
-#   rename(
-#     total_cases = `Total Cases`,
-#     cases_per_100000 = `Case Rate per 100000` 
-#   ) %>%
-#   mutate(case_rank = rank(-cases_per_100000, ties.method = "min"))
+# shouldn't need to clean up very much, data coming in should be clean and focused on what is needed
+
+
 ```
 
 ```{r special_cases_and_pulling_single_vars}
+# hopefully few edge cases to deal with here
+
+
 # state_text <- if_else(params$state == "District of Columbia", str_glue("the District of Columbia"), str_glue("state of {params$state}"))
-# 
+
+
+
+# single variables are convenient, but I may just opt to keep them in a row
 # state_cases_per_100000 <- cases %>%
 #   filter(state.name == params$state) %>%
 #   pull(cases_per_100000) %>%
@@ -77,7 +77,8 @@ library(fmsb)
 In `r params$country`, there were BLAH cases . This puts `r params$country` at number [RANK here]
 
 ```{r plot_the_map}
-# map <- us_map()
+# plot world map with seleced country highlighted
+
 # cases %>%
 #             left_join(map, by = join_by(state.name == full)) %>%
 #             mutate(highlight_state = if_else(state.name == params$state, "Y", "N")) %>%
@@ -125,50 +126,6 @@ In `r params$country`, there were BLAH cases . This puts `r params$country` at n
 
 ```
 
-```{r radar_chart_two}
-# cases %>%
-#       mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Mean")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Min")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Max")) %>%
-#       arrange(match(state.name,c('Max','Min'))) %>%
-#       select(all_of(totals_vec)) %>%
-#       data.frame() %>%
-#       filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
-#       column_to_rownames('state.name') %>%
-#       radarchart(centerzero = TRUE,
-#                  title = "Comparison of State with the Average",
-#                  pcol = pcol, 
-#                  pfcol = pfcol
-#                  ) 
-#       legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
-```
-```{r radar_chart_three}
-# cases %>%
-#       mutate(case_rank =  rank(cases_per_100000, ties.method = "min")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Mean")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), min, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Min")) %>%
-#       bind_rows(cases %>% summarise(across(where(is.numeric), max, na.rm = TRUE))) %>%
-#       mutate(state.name = replace_na(state.name, "Max")) %>%
-#       arrange(match(state.name,c('Max','Min'))) %>%
-#       select(all_of(seven_vec)) %>%
-#       data.frame() %>%
-#       filter(state.name %in% c(params$state, "Mean", "Min", "Max")) %>%
-#       column_to_rownames('state.name') %>%
-#       radarchart(centerzero = TRUE,
-#                  title = "Comparison of State with the Average",
-#                  pcol = pcol, 
-#                  pfcol = pfcol
-#                  ) 
-#       legend(x = "right", legend = c(params$state, "Mean"), pch = 20, col = pcol)
-```
-
-
 
 
 ```{r plot_metrics}
@@ -189,5 +146,6 @@ In `r params$country`, there were BLAH cases . This puts `r params$country` at n
 #               y = NULL,
 #               x = selection
 #          )
+
 ```
 
