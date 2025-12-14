@@ -1,0 +1,4 @@
+---- Considerations ----
+
+Do I keep the original unfiltered, unmutated dataset as happy_data() and treat it as a const, or should I treat it more like an actively filtered, mutated, etc dataframe that reflects the filters and config the user selected? Leaning towards keeping happy_data() untouched (minus formatting mutating and normalizing/standarding/etc) and performing filters/mutates/etc as needed for each situation.
+
