@@ -407,7 +407,7 @@ server <- function(input, output, session) {
         # selected country gets a "Y" entry for the highlight_country col
         highlight_country = if_else(Country == input$select_country, "Y", "N")
       ) |>
-      mutate(Country = fct_reorder(Country, `Happiness Rank`))
+      mutate(Country = fct_reorder(Country, `Happiness Rank`)) # this should sort the df by happiness rank ASC
   })
 
   ### Update world map plot ----
