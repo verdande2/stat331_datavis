@@ -17,24 +17,24 @@
 
 ## imports ----
 library(shiny)
-library(shinydashboard)
 library(plotly)
 library(ggplot2)
 library(dplyr)
 library(bslib)
 library(bs4Dash)
 library(DT)
-library(rworldmap) # TODO figure this world map shit out... urgh
+library(readr)
+library(scales)
+library(rworldmap)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
 ## Global Variables ----
-world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data
+world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
 
 ## ui definition (dashboardPage) ----
 ui <- dashboardPage(
-  title = "World Happiness bs4Dash Page", # TODO where the hell is this title actually output?
-  fullscreen = TRUE, # TODO why does this not work?!?!
+  title = "World Happiness bs4Dash Page", # TODO where the hell is this title actually output? browser title?
 
   ## Header ----
   header = dashboardHeader(
@@ -48,7 +48,8 @@ ui <- dashboardPage(
   ## Sidebar ----
   sidebar = dashboardSidebar(
     # TODO figure out how to increase the width of the sidemenu
-    # Custom CSS Tweaks TODO this custom CSS does not in fact help any of the issues I was hoping it would. Fuck.
+    # TODO this custom CSS does not in fact help any of the issues I was hoping it would. Fuck.
+    # Custom CSS Tweaks
     tags$head(
       tags$style(HTML(
         "
@@ -82,9 +83,6 @@ ui <- dashboardPage(
     collapsed = FALSE, # TODO figure out how to either un-autohide the sidemenu, or adjust it so that it collapses fully, vs expands fully
     status = "primary",
     elevation = 5,
-    sidebarUserPanel(
-      name = "General Config" # TODO why does this show up as a link?
-    ),
 
     ### Sidebar Menu ----
     sidebarMenu(
@@ -94,21 +92,29 @@ ui <- dashboardPage(
         "Settings",
         tabName = "main",
         icon = icon("gear"),
-        column(
-          12, # TODO figure out wtf I'm doing wrong with the col widths. 12 should be full width.... I must be missing something, or I'm retarded. Who knows.
-          card(
-            fileInput(
-              inputId = "file_upload",
-              label = "Load Data File",
-              multiple = FALSE
-            )
+        card(
+          fileInput(
+            inputId = "file_upload",
+            label = "Load Data File",
+            multiple = FALSE
           ),
-          card(
-            selectInput(
-              inputId = "select_country",
-              label = "Choose Country",
-              choices = ""
-            )
+          selectInput(
+            inputId = "select_country",
+            label = "Choose Country",
+            choices = ""
+          ),
+          sliderInput(
+            inputId = "slider_year",
+            min = 0,
+            max = 0,
+            step = 0,
+            value = c(0, 0),
+            label = "Year Filter",
+            sep = ""
+          ),
+          checkboxInput(
+            inputId = "show_linear_regression",
+            label = "Show Linear Regression Info"
           )
         )
       ),
@@ -118,10 +124,6 @@ ui <- dashboardPage(
         tabName = "report",
         icon = icon("bug"),
         card(
-          checkboxInput(
-            "show_linear_regression",
-            label = "Show Linear Regression Info"
-          ),
           downloadButton(
             outputId = "btn_report",
             label = "Generate Report"
@@ -141,54 +143,44 @@ ui <- dashboardPage(
           condition = "input.select_country != ''",
 
           fluidRow(
-            column(
-              12,
-
-              ### Scatter Plot ----
-              box(
-                id = "box_plot_scatter",
-                title = "Scatter Plot",
-                selectInput(
-                  inputId = "select_factor",
-                  label = "Selected Factor:",
-                  multiple = FALSE,
-                  choices = ""
-                ),
-
-                plotlyOutput(
-                  outputId = "plot_scatter",
-                  width = "100%",
-                  height = "400px"
-                )
-              )
+            ### Scatter Plot ----
+            box(
+              id = "box_plot_scatter",
+              title = "Scatter Plot",
+              "scatter"
+              # selectInput(
+              #   inputId = "select_factor",
+              #   label = "Selected Factor:",
+              #   multiple = FALSE,
+              #   choices = ""
+              # ),
+              #
+              # plotlyOutput(
+              #   outputId = "plot_scatter",
+              #   width = "100%",
+              #   height = "400px"
+              # )
             )
           ),
           fluidRow(
-            column(
-              6,
-
-              ### World Map ----
-              box(
-                title = "Map",
-                plotlyOutput(
-                  outputId = "plot_map",
-                  width = "100%",
-                  height = "400px"
-                )
+            ### World Map ----
+            box(
+              title = "Map",
+              plotlyOutput(
+                outputId = "plot_map",
+                width = "100%",
+                height = "400px"
               )
             ),
-            column(
-              6,
-
-              ### World Ranking ----
-              box(
-                title = "World Ranking",
-                plotlyOutput(
-                  outputId = "plot_ranking",
-                  width = "100%",
-                  height = "400px"
-                )
-              )
+            ### World Ranking ----
+            box(
+              title = "World Ranking",
+              "happiness ranking chart"
+              # plotlyOutput(
+              #   outputId = "plot_ranking",
+              #   width = "100%",
+              #   height = "400px"
+              # )
             )
           ),
 
@@ -212,15 +204,11 @@ ui <- dashboardPage(
           #   )
           # ),
           fluidRow(
-            column(
-              12,
-
-              ### DataTable output ----
-              box(
-                title = "Data Table",
-                width = 12,
-                DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
-              )
+            ### DataTable output ----
+            box(
+              title = "Data Table",
+              width = 12,
+              DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
             )
           )
         )
@@ -229,7 +217,7 @@ ui <- dashboardPage(
       ## Second Tab ----
       tabItem(
         tabName = "report",
-        "test"
+        "Any Report settings here. Country and year select mainly"
       )
     )
   ),
@@ -250,14 +238,14 @@ server <- function(input, output, session) {
         shiny::showModal(
           ui = shiny::modalDialog(
             title = "Help",
-            "Help Contents Here"
+            "Help Contents Here" # TODO Doc me
           )
         )
       } else if (input$sidebar == "report") {
         shiny::showModal(
           ui = shiny::modalDialog(
             title = "Help: Reports",
-            "Help info for report settings"
+            "Help info for report settings" # TODO Doc me
           )
         )
       }
@@ -267,51 +255,40 @@ server <- function(input, output, session) {
   ## Handle file upload ----
   df <- reactive({
     message("Detected file upload...")
+
     req(input$file_upload) # required id upload
 
     ext <- tools::file_ext(input$file_upload$name)
     switch(
       ext,
-      csv = vroom::vroom(
-        input$file_upload$datapath,
-        delim = ",",
-        progress = FALSE,
-        show_col_types = FALSE,
-        col_types = cols()
+      csv = suppressMessages(
+        # make vroom stfu
+        vroom::vroom(
+          input$file_upload$datapath,
+          delim = ",",
+          progress = FALSE,
+          show_col_types = FALSE,
+          col_types = cols()
+        )
       ),
-      validate("Invalid file; Please upload a .csv or .tsv file")
+      validate("Invalid file; Please upload a .csv file")
     )
   })
 
   ## Mangle dataset into a dataframe ----
   happy_data <- reactive({
     message("Cleaning up dataset...")
-    dat <- df() # TODO get this selected country part working
-    # |>
-    #   mutate( # selected country gets a "Y" entry for the highlight_country col
-    #     highlight_country = if_else(Country == input$select_country, "Y", "N")
-    #   )
+    dat <- df()
 
-    # TODO left_join world data with the dataset
-    #data <- left_join(world, data, by = c("full" = "state.name")) # world is not defined atm
-
-    # Mutate the data as needed (ensure country names are in agreement between dataset and world map country names ----
-    # data |> # TODO mutate me !
+    ### Mutate the data as needed ----
+    # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
+    # dat |> # TODO mutate me !
     #   rename(state.name = full)
 
     return(dat)
   })
 
   ## Update static elements ----
-
-  # no dynamic change for the Data Table, should be all records, barfed out as is
-  # TODO reconsider if I want to filter this based on selected country TBA
-  # TODO sort the datatable by happiness rank
-  ### Update DataTable ----
-  output$DT_alldata <- renderDT({
-    message("Updating DataTable...")
-    happy_data()
-  })
 
   # get a vector of the available factors
   v <- c(
@@ -341,30 +318,49 @@ server <- function(input, output, session) {
     message("Updating the select_country element with the list of countries...")
     updateSelectInput(
       inputId = "select_country",
-      choices = unique(happy_data()$Country) # unique to remove duplicates
+      choices = sort(unique(happy_data()$Country)) # unique to remove duplicates
+    )
+
+    message("Updating the slider element with min/max and setting value...")
+    updateSliderInput(
+      session = session,
+      inputId = "slider_year",
+      min = min(happy_data()$year, na.rm = T),
+      max = max(happy_data()$year, na.rm = T),
+      value = min(happy_data()$year, na.rm = T),
+      step = 1
     )
   })
 
   ### Select country onchange ----
   observeEvent(input$select_country, {
-    message("select_country Triggered...")
+    message("Handling onchange event for select_country...")
 
-    # TODO add a way to show the selected country in each plot
-    # ie. a is_selected flag with conditional color change or something
-    # could also do a mutate(is_selected = ...) kinda thing
+    freezeReactiveValue(input, "select_country")
 
-    # Determine the selected country and add a bool col that represents that
-    # this is the proper spot to do this mutate for selected country, as it is triggered when a new country is selected
-    dat <- happy_data()
-    # |>
-    #   mutate(
-    #     highlight_country = if_else(Country == input$select_country, "Y", "N")
-    #   ) # TODO figure this shit out with selected country
+    dat <- happy_data() |>
+      mutate(
+        # selected country gets a "Y" entry for the highlight_country col
+        highlight_country = if_else(Country == input$select_country, "Y", "N")
+      )
+    # dat is local variable, does my highlight country col disappear afteeR?
+  })
+
+  ### Select country onchange ----
+  observeEvent(input$slider_year, {
+    message("Handling onchange event for slider_year...")
+
+    freezeReactiveValue(input, "slider_year")
+
+    dat <- happy_data() |>
+      filter(year == input$slider_year)
   })
 
   ### Handling change to select_factor
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
+
+    freezeReactiveValue(input, "select_factor")
 
     # Updating scatter plot ----
     output$plot_scatter <- renderPlotly({
@@ -373,7 +369,7 @@ server <- function(input, output, session) {
         ggplot() +
         geom_point(
           aes(
-            x = `Country`,
+            x = !!sym(input$select_factor), # TODO Y U NO WORK U FUK
             y = `Happiness Score`
           )
         ) +
@@ -399,30 +395,47 @@ server <- function(input, output, session) {
     # update any additional plots that are based on selected factor
   })
 
-  ### Update world map plot ----
-  # TODO update this after I can successfully join the world map data with the dataset
-  # output$plot_map <- renderPlotly({
-  #   print("Updating Map Plot")
-  #   happy_data() |>
-  #     #mutate(Country = fct_reorder(Country, cases_per_100000)) |> # TODO what does this line do
-  #     ggplot() +
-  #     geom_sf(aes(fill = `Happiness Score`)) + #, alpha = highlight_country)) +
-  #     scale_fill_gradient(low = "white", high = "blue") +
-  #     guides(alpha = "none")
-  # })
+  # TODO reconsider if I want to filter this based on selected country, selected year
+  # TODO sort the datatable by happiness rank
+  ### Update DataTable ----
+  output$DT_alldata <- renderDT({
+    message("Updating DataTable...")
 
-  ### Update World Ranking plot
+    happy_data() |>
+      filter(year == input$slider_year) |>
+      mutate(
+        # selected country gets a "Y" entry for the highlight_country col
+        highlight_country = if_else(Country == input$select_country, "Y", "N")
+      ) |>
+      mutate(Country = fct_reorder(Country, `Happiness Rank`))
+  })
+
+  ### Update world map plot ----
+  output$plot_map <- renderPlotly({
+    message("Updating Map Plot...")
+    # TODO left_join world data with the dataset
+    data <- left_join(world, happy_data(), by = c("full" = "state.name")) # TODO verify the join by condition (col names match)
+
+    happy_data() |>
+      #mutate(Country = fct_reorder(Country, `Happiness Rank`)) |> # reorders based on the values of the second param
+      ggplot() +
+      geom_sf(aes(fill = `Happiness Score`)) + #, alpha = highlight_country)) +
+      scale_fill_gradient(low = "white", high = "blue") +
+      guides(alpha = "none")
+  })
+
+  ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
     selection <- input$select_country
     happy_data() |>
       mutate(
         highlight_country = if_else(Country == input$select_country, "Y", "N")
       ) |>
-      # mutate(
-      #   Country = fct_reorder(Country, `Happiness Rank`) # this appears to reorder factors based on the sort of country, then happiness rank? Google this
-      # ) |>
-      #
-      # TODO add a limit 35 or so, or paginate
+      mutate(
+        Country = fct_reorder(Country, `Happiness Rank`) # this sorts country, based on happiness rank ASC. kinda.
+      ) |>
+
+      # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
       ggplot(
         aes(
           x = `Happiness Rank`,
@@ -469,6 +482,7 @@ server <- function(input, output, session) {
       file.copy("AutomatedReport.Rmd", tempReport, overwrite = TRUE)
       params <- list(
         country = input$select_country,
+        linear_regression = input$show_linear_regression,
         dat = happy_data() # TODO determine if I should filter this down before sending to report rmd, answer: duh, dumb shit, do it
       )
 
@@ -483,6 +497,10 @@ server <- function(input, output, session) {
   )
 }
 
-
+options(shiny.reactlog = TRUE)
 ### Shiny App Function call ----
-shinyApp(ui, server)
+shinyApp(
+  ui,
+  server,
+  options = list(display.mode = "showcase")
+)
