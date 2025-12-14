@@ -9,8 +9,8 @@ output:
   pdf_document: default
 
 params:
-  cases: happy_data(), # TODO this is a problem point. Need cases passed, but unsure how to pass a "default" so to speak
-  dat:
+  dat: happy_data(), # TODO this is a problem point. Need dat passed, but unsure how to pass a "default" so to speak
+  linear_regression: TRUE
   country: 
     label: "Country"
     value: United States
@@ -35,7 +35,7 @@ knitr::opts_chunk$set(
 
 ## Output
 
-```{r setup}
+```{r includes}
 # TODO update all this file!
 library(tidyverse)
 library(readr)
