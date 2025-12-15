@@ -9,11 +9,12 @@ output:
   pdf_document: default
 
 params:
-  dat: happy_data(), # TODO this is a problem point. Need dat passed, but unsure how to pass a "default" so to speak
-  linear_regression: TRUE
-  country: 
-    label: "Country"
-    value: United States
+  dat: NULL
+  linear_regression: NULL
+  year_start: NULL
+  year_end: NULL
+  fulldat: NULL
+  country: NULL
     
     
 title: "`r params$country` Happiness Report"         
@@ -46,7 +47,7 @@ library(fmsb)
 ```
 
 ```{r global_variables}
-world = 
+#world = 
 ```
 
 ```{r data_prep}
