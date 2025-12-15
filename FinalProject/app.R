@@ -101,7 +101,7 @@ ui <- dashboardPage(
           selectInput(
             inputId = "select_country",
             label = "Choose Country",
-            choices = ""
+            choices = "Select Country"
           ),
           sliderInput(
             inputId = "slider_year",
@@ -147,6 +147,7 @@ ui <- dashboardPage(
             box(
               id = "box_plot_scatter",
               title = "Scatter Plot",
+
               selectInput(
                 inputId = "select_factor",
                 label = "Selected Factor:",
@@ -164,7 +165,8 @@ ui <- dashboardPage(
           fluidRow(
             ### World Map ----
             box(
-              title = "Map",
+              title = "World Map",
+
               plotlyOutput(
                 outputId = "plot_map",
                 width = "100%",
@@ -175,6 +177,7 @@ ui <- dashboardPage(
             ### World Ranking ----
             box(
               title = "World Ranking",
+
               plotlyOutput(
                 outputId = "plot_ranking",
                 width = "100%",
@@ -184,29 +187,30 @@ ui <- dashboardPage(
           ),
 
           ### Additional Plots ----
-          # fluidRow(
-          #   column(
-          #     6,
-          #     plotlyOutput(
-          #       outputId = "scatterLife",
-          #       width = "100%",
-          #       height = "400px"
-          #     )
-          #   ),
-          #   column(
-          #     6,
-          #     plotlyOutput(
-          #       outputId = "scatterFreedom",
-          #       width = "100%",
-          #       height = "400px"
-          #     )
-          #   )
-          # ),
+          fluidRow(
+            column(
+              6,
+              plotlyOutput(
+                outputId = "plot_1",
+                width = "100%",
+                height = "400px"
+              )
+            ),
+            column(
+              6,
+              plotlyOutput(
+                outputId = "plot_2",
+                width = "100%",
+                height = "400px"
+              )
+            )
+          ),
           fluidRow(
             ### DataTable output ----
             box(
               title = "Data Table",
               width = 12,
+              closable = TRUE,
               DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
             )
           )
@@ -216,7 +220,7 @@ ui <- dashboardPage(
       ## Second Tab ----
       tabItem(
         tabName = "report",
-        "Any Report settings here. Country and year select mainly"
+        "Any Report settings here. Country and year select mainly. Probably don't need this...."
       )
     )
   ),
@@ -224,33 +228,12 @@ ui <- dashboardPage(
   ## Footer ----
   footer = dashboardFooter(
     "STAT331 Data Visualization and Dashboards - Fall '25 - Professor Joseph Reid - Oregon Institute of Technology - Final Project - Andrew Sparkes",
-    fixed = TRUE
+    fixed = TRUE # stick to bottom of page
   )
 )
 
 ## Server Function Definition ----
 server <- function(input, output, session) {
-  ### help dialog toggle ----
-  observe({
-    if (input$help_switch == TRUE) {
-      if (input$sidebar == "main") {
-        shiny::showModal(
-          ui = shiny::modalDialog(
-            title = "Help",
-            "Help Contents Here" # TODO Doc me
-          )
-        )
-      } else if (input$sidebar == "report") {
-        shiny::showModal(
-          ui = shiny::modalDialog(
-            title = "Help: Reports",
-            "Help info for report settings" # TODO Doc me
-          )
-        )
-      }
-    }
-  })
-
   ## Handle file upload ----
   df <- reactive({
     # Keeping the full unmodified data frame in df
@@ -276,6 +259,7 @@ server <- function(input, output, session) {
   })
 
   ## Mangle dataset into a dataframe ----
+
   happy_data <- reactive({
     # happy_data will represent the filtered/mutated subset that will be used to plot
     message("Cleaning up dataset...")
@@ -288,12 +272,39 @@ server <- function(input, output, session) {
 
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
     # dat |> # TODO mutate me !
-    #   rename(state.name = full)
+    #   rename()
 
-    # TODO should I do all filter/mutating here, and only here?
+    # TODO should I do all filter/mutating here, and only here? already have unmodified df for aggregate plots
+
+    # TODO fix the descrepancies. United States =/= United States of America, etc
+
+    #if (input$select_country != NULL) { # this if statement really pisses it off. Complains that input$select_country is of length zero... wtf
+    # world_modified <- dat |>
+    #   mutate( # this mutate consistently pissed off the interpretter, fuck my life
+    #     selected_country = if_else(Country == input$select_country, 1, NA)
+    #   )
+
+    # ggplot(data = world_modified) +
+    #   geom_sf(aes(fill = selected_country)) +
+    #   theme_bw()
+    #}
 
     return(dat)
   })
+
+  ## make reactive variables to fuck with later EDIT apparently bad idea, not needed, makes interpretter complain
+  country <- reactive({
+    input$select_country
+  })
+  factor <- reactive({
+    input$select_factor
+  })
+  # years <- reactive({
+  #   input$slider_year
+  # })
+  # show_linear_regression <- reactive({
+  #   input$show_linear_regression
+  # })
 
   ## Update static elements ----
 
@@ -311,6 +322,7 @@ server <- function(input, output, session) {
   ### Populate the select_factor select with available factors ----
   message("Updating the choices in the select_factor dropdown...")
   updateSelectInput(
+    session = session,
     inputId = "select_factor",
     choices = v
   )
@@ -324,8 +336,10 @@ server <- function(input, output, session) {
     # update the country selector with the choices from the dataset
     message("Updating the select_country element with the list of countries...")
     updateSelectInput(
+      session = session,
       inputId = "select_country",
-      choices = sort(unique(happy_data()$Country)) # unique to remove duplicates
+      choices = sort(unique(happy_data()$Country)), # unique to remove duplicates
+      selected = NULL
     )
 
     message("Updating the slider element with min/max and setting value...")
@@ -348,11 +362,11 @@ server <- function(input, output, session) {
 
     freezeReactiveValue(input, "select_country")
 
-    happy_data() <- happy_data() |> # Every time select_country changes, this should mutate and overwrite it if needed
-      mutate(
-        # selected country gets a "Y" entry for the highlight_country col
-        highlight_country = if_else(Country == input$select_country, "Y", "N")
-      )
+    #happy_data() <- happy_data() # |> # Every time select_country changes, this should mutate and overwrite it if needed
+    # mutate( # this mutate really pisses it off
+    #   # selected country gets a "Y" entry for the highlight_country col
+    #   highlight_country = if_else(Country == input$select_country, "Y", "N")
+    # )
   })
 
   ### Select country onchange ----
@@ -361,7 +375,7 @@ server <- function(input, output, session) {
 
     freezeReactiveValue(input, "slider_year")
 
-    # filter down
+    # filter down # TODO if happy data is reactive, it should automatically update when years changes, right?
     happy_data() <- happy_data() |>
       filter(year >= input$slider_year[1], year <= input$slider_year[2])
   })
@@ -371,35 +385,38 @@ server <- function(input, output, session) {
     message("Handling onchange event for select_factor...")
 
     freezeReactiveValue(input, "select_factor")
-
+    #browser()
     # Updating scatter plot ----
-    output$plot_scatter <- renderPlotly({
-      happy_data() |>
-        ggplot() +
-        geom_point(
-          aes(
-            x = get(input$select_factor), # TODO Y U NO WORK U FUK
-            y = `Happiness Score`
-          )
-        ) +
-        guides()
-    })
+    if (input$select_factor != '') {
+      output$plot_scatter <- renderPlotly({
+        happy_data() |>
+          ggplot() +
+          geom_point(
+            aes(
+              x = !!sym(input$select_factor), # TODO Y U NO WORK U FUK
+              y = `Happiness Score`
+            )
+          ) +
+          guides()
+      })
 
-    # update the box title for the scatter plot as well
-
-    updateBox(
-      id = "box_plot_scatter",
-      action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
-      options = list(
-        title = paste(
-          "Scatter Plot of ",
-          input$select_factor,
-          " and the resulting Happiness Score"
-        ) # TODO make this actually show a proper title
+      # update the box title for the scatter plot as well
+      updateBox(
+        id = "box_plot_scatter",
+        action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
+        options = list(
+          title = paste(
+            "Scatter Plot of ",
+            input$select_factor,
+            " and the resulting Happiness Score"
+          ) # TODO make this actually show a proper title
+        )
       )
-    )
 
-    # update any additional plots that are based on selected factor
+      # update any additional plots that are based on selected factor
+    }
+
+    # update anything else that doesn't depend on the value of select_factor. Should be nothing ...
   })
 
   # TODO reconsider if I want to filter this based on selected country, selected year
@@ -409,49 +426,59 @@ server <- function(input, output, session) {
   output$DT_alldata <- renderDT({
     message("Updating DataTable...")
 
-    # pass through the whole dataframe, but ordered by happiness rank
-    happy_data() |>
-      mutate(Country = fct_reorder(Country, `Happiness Rank`)) # this should sort the df by happiness rank ASC
+    # pass through the whole dataframe (only filtered by year, basic mutation of country names), but ordered by happiness rank
+    happy_data() # |>
+    # mutate(Country = fct_reorder(Country, `Happiness Rank`)) # this should sort the df by happiness rank ASC, # This mutate chokes the interpretter
   })
 
   ### Update world map plot ----
   output$plot_map <- renderPlotly({
-    message("Updating Map Plot...")
+    message("Updating World Map Plot...")
+    # dataset_countries <- sort(unique(dat$Country))
+    # world_data_countries <- sort(unique(world$name))
 
-    # TODO left_join world data with the dataset
-    dat <- left_join(world, happy_data(), by = c("full" = "state.name")) # TODO verify the join by condition (col names match)
+    #browser()
+    dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO verify the join by condition (col names match) THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
+    # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
 
+    # dat is the filtered happy_data, with world shape data joined on
     dat |>
-      ggplot() +
-      geom_sf(aes(fill = `Happiness Score`)) + #, alpha = highlight_country)) +
+      ggplot() + # TODO issues with below geom_sf, complaining about geometry, tried passing geometry=geometry and it hated that too
+      geom_sf(aes(fill = `Happiness Score`, geometry = geometry)) + #, alpha = highlight_country)) + # at this point, happy data should have the highlight_country col created
       scale_fill_gradient(low = "white", high = "blue") +
       guides(alpha = "none")
   })
 
   ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
-    happy_data() |>
+    # don't try to render plotly if country hasn't been selected yet
+    if (country() != '') {
+      # using country() pisses it off, but using input$select_country ALSO pisses it off, fuck me
+      #req(input$select_country)
 
-      # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
-      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
-      ggplot(
-        aes(
-          x = `Happiness Rank`,
-          y = Country,
-          fill = highlight_country
+      happy_data() |>
+
+        # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
+        # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
+        ggplot(
+          aes(
+            x = `Happiness Rank`,
+            y = Country
+            #fill = highlight_country # TODO Fix this ASAP, bullshit
+          )
+        ) +
+        geom_col() +
+        scale_x_continuous(
+          labels = comma_format()
+        ) +
+        theme(
+          legend.position = "none"
+        ) +
+        labs(
+          y = NULL,
+          x = "Happiness Rank"
         )
-      ) +
-      geom_col() +
-      scale_x_continuous(
-        labels = comma_format()
-      ) +
-      theme(
-        legend.position = "none"
-      ) +
-      labs(
-        y = NULL,
-        x = "Happiness Rank"
-      )
+    }
   })
 
   ### Report button handling ----
@@ -484,10 +511,10 @@ server <- function(input, output, session) {
         # prepare the report parameters
         country = input$select_country,
         linear_regression = input$show_linear_regression,
-        ,
         year_start = input$slider_year[1],
         year_end = input$slider_year[2],
-        dat = happy_data() # TODO determine if I should filter this down before sending to report rmd, answer: duh, dumb shit, do it
+        dat = happy_data(), # already filtered by year, and should have highlight_country set
+        fulldat = df() # also pass along the full unmodified df in case we want to compare specific country to all countries
       )
 
       # barf out the rendered file
@@ -499,7 +526,29 @@ server <- function(input, output, session) {
       )
     }
   )
+
+  ### help dialog toggle ----
+  observe({
+    if (input$help_switch == TRUE) {
+      if (input$sidebar == "main") {
+        shiny::showModal(
+          ui = shiny::modalDialog(
+            title = "Help",
+            "Help Contents Here" # TODO Doc me
+          )
+        )
+      } else if (input$sidebar == "report") {
+        shiny::showModal(
+          ui = shiny::modalDialog(
+            title = "Help: Reports",
+            "Help info for report settings" # TODO Doc me
+          )
+        )
+      }
+    }
+  })
 }
+
 
 options(shiny.reactlog = TRUE) # this seems to do jack all
 ### Shiny App Function call ----
