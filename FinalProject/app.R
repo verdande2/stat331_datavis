@@ -497,10 +497,10 @@ server <- function(input, output, session) {
   )
 }
 
-options(shiny.reactlog = TRUE)
+options(shiny.reactlog = TRUE) # this seems to do jack all
 ### Shiny App Function call ----
 shinyApp(
   ui,
-  server,
-  options = list(display.mode = "showcase")
+  server
+  #options = list(display.mode = "showcase")
 )
