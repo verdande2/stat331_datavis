@@ -110,7 +110,7 @@ ui <- dashboardPage(
             step = 0,
             value = c(0, 0),
             label = "Year Filter",
-            sep = ""
+            sep = "" # remove comma delimited numbers
           ),
           checkboxInput(
             inputId = "show_linear_regression",
@@ -147,19 +147,18 @@ ui <- dashboardPage(
             box(
               id = "box_plot_scatter",
               title = "Scatter Plot",
-              "scatter"
-              # selectInput(
-              #   inputId = "select_factor",
-              #   label = "Selected Factor:",
-              #   multiple = FALSE,
-              #   choices = ""
-              # ),
-              #
-              # plotlyOutput(
-              #   outputId = "plot_scatter",
-              #   width = "100%",
-              #   height = "400px"
-              # )
+              selectInput(
+                inputId = "select_factor",
+                label = "Selected Factor:",
+                multiple = FALSE,
+                choices = ""
+              ),
+
+              plotlyOutput(
+                outputId = "plot_scatter",
+                width = "100%",
+                height = "400px"
+              )
             )
           ),
           fluidRow(
@@ -172,15 +171,15 @@ ui <- dashboardPage(
                 height = "400px"
               )
             ),
+
             ### World Ranking ----
             box(
               title = "World Ranking",
-              "happiness ranking chart"
-              # plotlyOutput(
-              #   outputId = "plot_ranking",
-              #   width = "100%",
-              #   height = "400px"
-              # )
+              plotlyOutput(
+                outputId = "plot_ranking",
+                width = "100%",
+                height = "400px"
+              )
             )
           ),
 
@@ -254,6 +253,7 @@ server <- function(input, output, session) {
 
   ## Handle file upload ----
   df <- reactive({
+    # Keeping the full unmodified data frame in df
     message("Detected file upload...")
 
     req(input$file_upload) # required id upload
@@ -277,13 +277,20 @@ server <- function(input, output, session) {
 
   ## Mangle dataset into a dataframe ----
   happy_data <- reactive({
+    # happy_data will represent the filtered/mutated subset that will be used to plot
     message("Cleaning up dataset...")
-    dat <- df()
 
     ### Mutate the data as needed ----
+
+    # for now, looking at a subset of the data due to so much incompleteness for years past 2016
+    dat <- df() |>
+      filter(year %in% c(2015, 2016))
+
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
     # dat |> # TODO mutate me !
     #   rename(state.name = full)
+
+    # TODO should I do all filter/mutating here, and only here?
 
     return(dat)
   })
@@ -327,7 +334,10 @@ server <- function(input, output, session) {
       inputId = "slider_year",
       min = min(happy_data()$year, na.rm = T),
       max = max(happy_data()$year, na.rm = T),
-      value = min(happy_data()$year, na.rm = T),
+      value = c(
+        min(happy_data()$year, na.rm = T),
+        max(happy_data()$year, na.rm = T)
+      ), # default to select full range
       step = 1
     )
   })
@@ -338,12 +348,11 @@ server <- function(input, output, session) {
 
     freezeReactiveValue(input, "select_country")
 
-    dat <- happy_data() |>
+    happy_data() <- happy_data() |> # Every time select_country changes, this should mutate and overwrite it if needed
       mutate(
         # selected country gets a "Y" entry for the highlight_country col
         highlight_country = if_else(Country == input$select_country, "Y", "N")
       )
-    # dat is local variable, does my highlight country col disappear afteeR?
   })
 
   ### Select country onchange ----
@@ -352,8 +361,9 @@ server <- function(input, output, session) {
 
     freezeReactiveValue(input, "slider_year")
 
-    dat <- happy_data() |>
-      filter(year == input$slider_year)
+    # filter down
+    happy_data() <- happy_data() |>
+      filter(year >= input$slider_year[1], year <= input$slider_year[2])
   })
 
   ### Handling change to select_factor
@@ -365,11 +375,10 @@ server <- function(input, output, session) {
     # Updating scatter plot ----
     output$plot_scatter <- renderPlotly({
       happy_data() |>
-        #select(c(input$select_factor)) |> # TODO fix me! we use the chosen factor to filter out the extraneous data
         ggplot() +
         geom_point(
           aes(
-            x = !!sym(input$select_factor), # TODO Y U NO WORK U FUK
+            x = get(input$select_factor), # TODO Y U NO WORK U FUK
             y = `Happiness Score`
           )
         ) +
@@ -377,47 +386,42 @@ server <- function(input, output, session) {
     })
 
     # update the box title for the scatter plot as well
-    if (input$select_factor != "") {
-      # if something is actually selected
-      updateBox(
-        id = "box_plot_scatter",
-        action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
-        options = list(
-          title = paste(
-            "Scatter Plot of ",
-            input$select_factor,
-            " and the resulting Happiness Score"
-          ) # TODO make this actually show a proper title
-        )
+
+    updateBox(
+      id = "box_plot_scatter",
+      action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
+      options = list(
+        title = paste(
+          "Scatter Plot of ",
+          input$select_factor,
+          " and the resulting Happiness Score"
+        ) # TODO make this actually show a proper title
       )
-    }
+    )
 
     # update any additional plots that are based on selected factor
   })
 
   # TODO reconsider if I want to filter this based on selected country, selected year
   # TODO sort the datatable by happiness rank
+  # TODO determine if this renderDT call needs to be somewhere else to be dynamically updated
   ### Update DataTable ----
   output$DT_alldata <- renderDT({
     message("Updating DataTable...")
 
+    # pass through the whole dataframe, but ordered by happiness rank
     happy_data() |>
-      filter(year == input$slider_year) |>
-      mutate(
-        # selected country gets a "Y" entry for the highlight_country col
-        highlight_country = if_else(Country == input$select_country, "Y", "N")
-      ) |>
       mutate(Country = fct_reorder(Country, `Happiness Rank`)) # this should sort the df by happiness rank ASC
   })
 
   ### Update world map plot ----
   output$plot_map <- renderPlotly({
     message("Updating Map Plot...")
-    # TODO left_join world data with the dataset
-    data <- left_join(world, happy_data(), by = c("full" = "state.name")) # TODO verify the join by condition (col names match)
 
-    happy_data() |>
-      #mutate(Country = fct_reorder(Country, `Happiness Rank`)) |> # reorders based on the values of the second param
+    # TODO left_join world data with the dataset
+    dat <- left_join(world, happy_data(), by = c("full" = "state.name")) # TODO verify the join by condition (col names match)
+
+    dat |>
       ggplot() +
       geom_sf(aes(fill = `Happiness Score`)) + #, alpha = highlight_country)) +
       scale_fill_gradient(low = "white", high = "blue") +
@@ -426,16 +430,10 @@ server <- function(input, output, session) {
 
   ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
-    selection <- input$select_country
     happy_data() |>
-      mutate(
-        highlight_country = if_else(Country == input$select_country, "Y", "N")
-      ) |>
-      mutate(
-        Country = fct_reorder(Country, `Happiness Rank`) # this sorts country, based on happiness rank ASC. kinda.
-      ) |>
 
       # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
+      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
       ggplot(
         aes(
           x = `Happiness Rank`,
@@ -463,26 +461,32 @@ server <- function(input, output, session) {
     # handling the report button press
     rmarkdown::render(
       input = "AutomatedReport.Rmd",
-      output_file = paste0(input$select_country, ".html"),
-      params = list(Country = input$select_country)
+      output_file = paste0(input$select_country, ".html"), # TODO figure out where this file is actually rendered to. Assuming tmp folder, but there is no mention of a directory?
+      params = list(Country = input$select_country) # does this params list need the remainder of the params like linear_regression? TODO figure this out. Seems like a redundant call to render?
     )
   })
 
   ### Download handler ----
   output$btn_report <- downloadHandler(
-    # example filename: United States_2025-12-12.html # TODO look into replacing spaces with underscores in filename
     filename = function() {
-      paste0(input$select_country, "_", Sys.Date(), ".html")
+      # example filename: United States_2025-12-12.html # TODO look into replacing spaces with underscores in filename
+      paste0(input$select_country, "_", Sys.Date(), ".html") # TODO note difference between this filename and the above filename in the input$btn_report render call. hmmmm.
     },
+
     content = function(file) {
       message("Generating automated report...")
 
       # copy the local Rmd report to a temp file
-      tempReport <- file.path(tempdir(), "AutomatedReport.Rmd")
-      file.copy("AutomatedReport.Rmd", tempReport, overwrite = TRUE)
+      tempReport <- file.path(tempdir(), "AutomatedReport.Rmd") # makes an abs path to /tmp/AutomatedReport.Rmd (file does not yet exist)
+      file.copy("AutomatedReport.Rmd", tempReport, overwrite = TRUE) # copy the Report.Rmd to the temp location
+
       params <- list(
+        # prepare the report parameters
         country = input$select_country,
         linear_regression = input$show_linear_regression,
+        ,
+        year_start = input$slider_year[1],
+        year_end = input$slider_year[2],
         dat = happy_data() # TODO determine if I should filter this down before sending to report rmd, answer: duh, dumb shit, do it
       )
 
@@ -491,7 +495,7 @@ server <- function(input, output, session) {
         tempReport,
         output_file = file,
         params = params, # TODO Warning: Error in knit_params_get: render params not declared in YAML: cases, filter TODO WTF Tried putting them in yaml of the report.Rmd
-        envir = new.env(parent = globalenv())
+        envir = new.env(parent = globalenv()) # TODO google this line and learn what it does. environment variables copy to scope of report?
       )
     }
   )
