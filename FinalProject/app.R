@@ -266,9 +266,8 @@ server <- function(input, output, session) {
 
     ### Mutate the data as needed ----
 
-    # for now, looking at a subset of the data due to so much incompleteness for years past 2016
-    dat <- df() |>
-      filter(year %in% c(2015, 2016))
+    dat <- df()
+    #filter(year %in% c(2015, 2016)) |> # for now, looking at a subset of the data due to so much incompleteness for years past 2016
 
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
     # dat |> # TODO mutate me !
@@ -288,17 +287,30 @@ server <- function(input, output, session) {
     #   geom_sf(aes(fill = selected_country)) +
     #   theme_bw()
     #}
+    #
+    if (input$select_country != '') {
+      dat <- dat |>
+        mutate(
+          # this mutate really pisses it off
+          # selected country gets a "Y" entry for the highlight_country col
+          highlight_country = if_else(Country == input$select_country, "Y", "N")
+        )
+    }
+    # if (!is.na(input$slider_year)) {
+    #   dat <- dat |>
+    #     filter(year >= input$slider_year[1], year <= input$slider_year[2])
+    # }
 
     return(dat)
   })
 
   ## make reactive variables to fuck with later EDIT apparently bad idea, not needed, makes interpretter complain
-  country <- reactive({
-    input$select_country
-  })
-  factor <- reactive({
-    input$select_factor
-  })
+  # country <- reactive({
+  #   input$select_country
+  # })
+  # factor <- reactive({
+  #   input$select_factor
+  # })
   # years <- reactive({
   #   input$slider_year
   # })
@@ -358,27 +370,23 @@ server <- function(input, output, session) {
 
   ### Select country onchange ----
   observeEvent(input$select_country, {
-    message("Handling onchange event for select_country...")
+    message("Handling onchange event for select_country... DO NOTHING")
 
-    freezeReactiveValue(input, "select_country")
-
-    #happy_data() <- happy_data() # |> # Every time select_country changes, this should mutate and overwrite it if needed
-    # mutate( # this mutate really pisses it off
-    #   # selected country gets a "Y" entry for the highlight_country col
-    #   highlight_country = if_else(Country == input$select_country, "Y", "N")
-    # )
+    #freezeReactiveValue(input, "select_country")
   })
 
   ### Select country onchange ----
-  observeEvent(input$slider_year, {
-    message("Handling onchange event for slider_year...")
+  observeEvent(
+    input$slider_year,
+    {
+      message("Handling onchange event for slider_year...")
 
-    freezeReactiveValue(input, "slider_year")
+      #freezeReactiveValue(input, "slider_year")
 
-    # filter down # TODO if happy data is reactive, it should automatically update when years changes, right?
-    happy_data() <- happy_data() |>
-      filter(year >= input$slider_year[1], year <= input$slider_year[2])
-  })
+      # filter down # TODO if happy data is reactive, it should automatically update when years changes, right?
+    },
+    ignoreInit = TRUE
+  )
 
   ### Handling change to select_factor
   observeEvent(input$select_factor, {
@@ -386,6 +394,7 @@ server <- function(input, output, session) {
 
     freezeReactiveValue(input, "select_factor")
     #browser()
+
     # Updating scatter plot ----
     if (input$select_factor != '') {
       output$plot_scatter <- renderPlotly({
@@ -439,21 +448,21 @@ server <- function(input, output, session) {
 
     # TODO something in here is throwing a "Warning: Error in <Anonymous>: number of columns of matrices must match (see arg 15)"
     #browser()
-    dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO verify the join by condition (col names match) THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
-    # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
-
-    # dat is the filtered happy_data, with world shape data joined on
-    dat |>
-      ggplot() + # TODO issues with below geom_sf, complaining about geometry, tried passing geometry=geometry and it hated that too
-      geom_sf(aes(fill = `Happiness Score`, geometry = geometry)) + #, alpha = highlight_country)) + # at this point, happy data should have the highlight_country col created
-      scale_fill_gradient(low = "white", high = "blue") +
-      guides(alpha = "none")
+    # dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO verify the join by condition (col names match) THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
+    # # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
+    #
+    # # dat is the filtered happy_data, with world shape data joined on
+    # dat |>
+    #   ggplot() + # TODO issues with below geom_sf, complaining about geometry, tried passing geometry=geometry and it hated that too
+    #   geom_sf(aes(fill = `Happiness Score`, geometry = geometry)) + #, alpha = highlight_country)) + # at this point, happy data should have the highlight_country col created
+    #   scale_fill_gradient(low = "white", high = "blue") +
+    #   guides(alpha = "none")
   })
 
   ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
     # don't try to render plotly if country hasn't been selected yet
-    if (country() != '') {
+    if (input$select_country != '') {
       # using country() pisses it off, but using input$select_country ALSO pisses it off, fuck me
       #req(input$select_country)
 
@@ -490,7 +499,7 @@ server <- function(input, output, session) {
     rmarkdown::render(
       input = "AutomatedReport.Rmd",
       output_file = paste0(input$select_country, ".html"), # TODO figure out where this file is actually rendered to. Assuming tmp folder, but there is no mention of a directory?
-      params = list(Country = input$select_country) # does this params list need the remainder of the params like linear_regression? TODO figure this out. Seems like a redundant call to render?
+      params = list(country = input$select_country) # does this params list need the remainder of the params like linear_regression? TODO figure this out. Seems like a redundant call to render?
     )
   })
 
