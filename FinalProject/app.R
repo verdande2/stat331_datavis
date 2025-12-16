@@ -437,6 +437,7 @@ server <- function(input, output, session) {
     # dataset_countries <- sort(unique(dat$Country))
     # world_data_countries <- sort(unique(world$name))
 
+    # TODO something in here is throwing a "Warning: Error in <Anonymous>: number of columns of matrices must match (see arg 15)"
     #browser()
     dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO verify the join by condition (col names match) THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
     # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
