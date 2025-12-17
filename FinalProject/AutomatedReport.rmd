@@ -32,15 +32,6 @@ knitr::opts_chunk$set(
 )
 ```
 
-World map here
-World ranking here
-Individual stats and happiness score/ranking infoboxes
-```{r}
-# TODO figure out how to make these god damn valueboxes work to display the factors for the selected country
-#valueBox(h1("comments"), icon = "fa-comments")
-```
-
-
 ```{r includes}
 # TODO update all this file!
 library(tidyverse)
@@ -50,6 +41,17 @@ library(usmap)
 library(fmsb)
 library(flexdashboard)
 ```
+
+World map here
+World ranking here
+Individual stats and happiness score/ranking infoboxes
+```{r}
+# TODO figure out how to make these god damn valueboxes work to display the factors for the selected country
+valueBox(h1("comments"), icon = "fa-comments")
+```
+
+
+
 
 ```{r global_variables}
 #world = 
