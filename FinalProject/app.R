@@ -106,80 +106,76 @@ ui <- dashboardPage(
       ### Main Tab ----
       tabItem(
         tabName = "main",
-        conditionalPanel(
-          condition = "input.select_country != ''",
+        fluidRow(
+          ### Scatter Plot ----
+          box(
+            id = "box_plot_scatter",
+            title = "Scatter Plot",
 
-          fluidRow(
-            ### Scatter Plot ----
-            box(
-              id = "box_plot_scatter",
-              title = "Scatter Plot",
-
-              selectInput(
-                inputId = "select_factor",
-                label = "Selected Factor:",
-                multiple = FALSE,
-                choices = ""
-              ),
-
-              plotlyOutput(
-                outputId = "plot_scatter",
-                width = "100%",
-                height = "400px"
-              )
-            )
-          ),
-          fluidRow(
-            ### World Map ----
-            box(
-              title = "World Map",
-
-              plotlyOutput(
-                outputId = "plot_map",
-                width = "100%",
-                height = "400px"
-              )
+            selectInput(
+              inputId = "select_factor",
+              label = "Selected Factor:",
+              multiple = FALSE,
+              choices = NULL
             ),
 
-            ### World Ranking ----
-            box(
-              title = "World Ranking",
+            plotlyOutput(
+              outputId = "plot_scatter",
+              width = "800px",
+              height = "400px"
+            )
+          )
+        ),
+        fluidRow(
+          ### World Map ----
+          box(
+            title = "World Map",
 
-              plotlyOutput(
-                outputId = "plot_ranking",
-                width = "100%",
-                height = "400px"
-              )
+            plotlyOutput(
+              outputId = "plot_map",
+              width = "100%",
+              height = "400px"
             )
           ),
 
-          ### Additional Plots ----
-          fluidRow(
-            column(
-              6,
-              plotlyOutput(
-                outputId = "plot_1",
-                width = "100%",
-                height = "400px"
-              )
-            ),
-            column(
-              6,
-              plotlyOutput(
-                outputId = "plot_2",
-                width = "100%",
-                height = "400px"
-              )
+          ### World Ranking ----
+          box(
+            title = "World Ranking",
+
+            plotlyOutput(
+              outputId = "plot_ranking",
+              width = "100%",
+              height = "400px"
+            )
+          )
+        ),
+
+        ### Additional Plots ----
+        fluidRow(
+          column(
+            6,
+            plotlyOutput(
+              outputId = "plot_1",
+              width = "100%",
+              height = "400px"
             )
           ),
-          fluidRow(
-            ### DataTable output ----
-            box(
-              title = "Data Table",
-              width = 12,
-              closable = TRUE,
-              DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
+          column(
+            6,
+            plotlyOutput(
+              outputId = "plot_2",
+              width = "100%",
+              height = "400px"
             )
+          )
+        ),
+        fluidRow(
+          ### DataTable output ----
+          box(
+            title = "Data Table",
+            width = 12,
+            closable = TRUE,
+            DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
           )
         )
       ),
@@ -204,9 +200,9 @@ server <- function(input, output, session) {
   ## Handle file upload ----
   df <- reactive({
     # Keeping the full unmodified data frame in df
-    message("Detected file upload...")
-
     req(input$file_upload) # required id upload
+
+    message("Detected file upload...")
 
     ext <- tools::file_ext(input$file_upload$name)
     switch(
@@ -243,6 +239,9 @@ server <- function(input, output, session) {
 
   happy_data <- reactive({
     # happy_data will represent the filtered/mutated subset that will be used to plot
+
+    req(years())
+    req(country())
     message("Cleaning up dataset...")
 
     ### Mutate the data as needed ----
@@ -260,43 +259,25 @@ server <- function(input, output, session) {
         # add a col representing the selected country to highlight
         selected_country = if_else(Country == country(), "Y", "N")
       )
-    # ) |>
-    # filter(
-    #   # filter down to the selected years
-    #   df()$year >= years()[1],
-    #   df()$year <= years()[2]
-    # )
-    # Warning: Error in filter: ℹ In argument: `df()$year >= years()[1]`.
-    # Caused by error:
-    #   ! `..1` must be of size 1231 or 1, not size 0.
 
+    if (years()[1] != 0 && years()[2] != 0) {
+      dat <- dat |>
+        filter(
+          # filter down to the selected years
+          df()$year >= years()[1],
+          df()$year <= years()[2]
+        )
+    }
+
+    #browser()
     return(dat)
   })
 
   ## Update static elements ----
 
-  # TODO investigate what this setdiff actually does. it's a set difference, possibly pruning out the passed vector it looks like? maybe use similar idea for pruning other cols out of happy_data
-  # rank_vec <- reactive({
-  #   setdiff(
-  #     names(COVID_data()),
-  #     c(
-  #       "fips",
-  #       "abbr",
-  #       "state.name",
-  #       "geom",
-  #       "Confirmed Cases",
-  #       "Probable Cases",
-  #       "Confirmed Deaths",
-  #       "Probable Deaths",
-  #       "case_rank"
-  #     )
-  #   )
-  # })
-  #
-
   ## Update dynamic elements  ----
 
-  ### Upload input onchange ----
+  ### file upload onchange ----
   observeEvent(input$file_upload, {
     message("File Upload initiated...")
 
@@ -370,35 +351,33 @@ server <- function(input, output, session) {
     #browser()
 
     # Updating scatter plot ----
-    if (!is.null(factor())) {
-      output$plot_scatter <- renderPlotly({
-        happy_data() |>
-          ggplot() +
-          geom_point(
-            aes(
-              x = !!sym(factor()), # TODO Y U NO WORK U FUK
-              y = `Happiness Score`
-            )
-          ) +
-          guides()
-      })
+    output$plot_scatter <- renderPlotly({
+      happy_data() |>
+        ggplot() +
+        geom_point(
+          aes(
+            x = Country, #!!sym(factor()), # TODO Y U NO WORK U FUK
+            y = `Happiness Score`
+          )
+        ) +
+        guides()
+    })
 
-      # update the box title for the scatter plot as well
-      updateBox(
-        session = session,
-        id = "box_plot_scatter",
-        action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
-        options = list(
-          title = paste(
-            "Scatter Plot of ",
-            input$select_factor,
-            " and the resulting Happiness Score"
-          ) # TODO make this actually show a proper title
-        )
+    # update the box title for the scatter plot as well
+    updateBox(
+      session = session,
+      id = "box_plot_scatter",
+      action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
+      options = list(
+        title = paste(
+          "Scatter Plot of ",
+          input$select_factor,
+          " and the resulting Happiness Score"
+        ) # TODO make this actually show a proper title
       )
+    )
 
-      # update any additional plots that are based on selected factor
-    }
+    # update any additional plots that are based on selected factor
 
     # update anything else that doesn't depend on the value of select_factor. Should be nothing ...
   })
