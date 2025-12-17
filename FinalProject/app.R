@@ -82,6 +82,9 @@ ui <- dashboardPage(
             label = "Year Filter",
             sep = "" # remove comma delimited numbers
           ),
+          card_body(
+            "Note: Data is incomplete for years beyond 2015 and 2016. Proceed at your own risk."
+          ),
           checkboxInput(
             inputId = "show_linear_regression",
             label = "Show Linear Regression Info"
