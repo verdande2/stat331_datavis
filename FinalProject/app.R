@@ -225,6 +225,20 @@ server <- function(input, output, session) {
     )
   })
 
+  ## make reactive variables out of our filters in the sidebar, as they will be used to update other reactive elements
+  country <- reactive({
+    input$select_country
+  })
+  factor <- reactive({
+    input$select_factor
+  })
+  years <- reactive({
+    input$slider_year
+  })
+  show_linear_regression <- reactive({
+    input$show_linear_regression
+  })
+
   ## Mangle dataset into a dataframe ----
 
   happy_data <- reactive({
@@ -233,78 +247,52 @@ server <- function(input, output, session) {
 
     ### Mutate the data as needed ----
 
-    dat <- df()
     #filter(year %in% c(2015, 2016)) |> # for now, looking at a subset of the data due to so much incompleteness for years past 2016
 
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
     # dat |> # TODO mutate me !
     #   rename()
 
-    # TODO should I do all filter/mutating here, and only here? already have unmodified df for aggregate plots
-
     # TODO fix the descrepancies. United States =/= United States of America, etc
 
-    #if (input$select_country != NULL) { # this if statement really pisses it off. Complains that input$select_country is of length zero... wtf
-    # world_modified <- dat |>
-    #   mutate( # this mutate consistently pissed off the interpretter, fuck my life
-    #     selected_country = if_else(Country == input$select_country, 1, NA)
-    #   )
-
-    # ggplot(data = world_modified) +
-    #   geom_sf(aes(fill = selected_country)) +
-    #   theme_bw()
-    #}
-    #
-    if (input$select_country != '') {
-      dat <- dat |>
-        mutate(
-          # this mutate really pisses it off
-          # selected country gets a "Y" entry for the highlight_country col
-          highlight_country = if_else(Country == input$select_country, "Y", "N")
-        )
-    }
-    # if (!is.na(input$slider_year)) {
-    #   dat <- dat |>
-    #     filter(year >= input$slider_year[1], year <= input$slider_year[2])
-    # }
+    dat <- df() |>
+      mutate(
+        # add a col representing the selected country to highlight
+        selected_country = if_else(Country == country(), "Y", "N")
+      )
+    # ) |>
+    # filter(
+    #   # filter down to the selected years
+    #   df()$year >= years()[1],
+    #   df()$year <= years()[2]
+    # )
+    # Warning: Error in filter: ℹ In argument: `df()$year >= years()[1]`.
+    # Caused by error:
+    #   ! `..1` must be of size 1231 or 1, not size 0.
 
     return(dat)
   })
 
-  ## make reactive variables to fuck with later EDIT apparently bad idea, not needed, makes interpretter complain
-  # country <- reactive({
-  #   input$select_country
-  # })
-  # factor <- reactive({
-  #   input$select_factor
-  # })
-  # years <- reactive({
-  #   input$slider_year
-  # })
-  # show_linear_regression <- reactive({
-  #   input$show_linear_regression
-  # })
-
   ## Update static elements ----
 
-  # get a vector of the available factors
-  v <- c(
-    "Economy (GDP per Capita)",
-    "Family",
-    "Health (Life Expectancy)",
-    "Freedom",
-    "Trust (Government Corruption)",
-    "Generosity",
-    "Dystopia Residual"
-  )
-
-  ### Populate the select_factor select with available factors ----
-  message("Updating the choices in the select_factor dropdown...")
-  updateSelectInput(
-    session = session,
-    inputId = "select_factor",
-    choices = v
-  )
+  # TODO investigate what this setdiff actually does. it's a set difference, possibly pruning out the passed vector it looks like? maybe use similar idea for pruning other cols out of happy_data
+  # rank_vec <- reactive({
+  #   setdiff(
+  #     names(COVID_data()),
+  #     c(
+  #       "fips",
+  #       "abbr",
+  #       "state.name",
+  #       "geom",
+  #       "Confirmed Cases",
+  #       "Probable Cases",
+  #       "Confirmed Deaths",
+  #       "Probable Deaths",
+  #       "case_rank"
+  #     )
+  #   )
+  # })
+  #
 
   ## Update dynamic elements  ----
 
@@ -312,7 +300,6 @@ server <- function(input, output, session) {
   observeEvent(input$file_upload, {
     message("File Upload initiated...")
 
-    # update the country selector with the choices from the dataset
     message("Updating the select_country element with the list of countries...")
     updateSelectInput(
       session = session,
@@ -333,6 +320,29 @@ server <- function(input, output, session) {
       ), # default to select full range
       step = 1
     )
+
+    # get a vector of the available factors
+    v <- c(
+      "Economy (GDP per Capita)",
+      "Family",
+      "Health (Life Expectancy)",
+      "Freedom",
+      "Trust (Government Corruption)",
+      "Generosity",
+      "Dystopia Residual"
+    )
+
+    v <- sort(v) # alphabetize just for presentation's sake
+
+    ### Populate the select_factor select with available factors ----
+    message(
+      "Updating the choices in the select_factor dropdown for main scatter plot..."
+    )
+    updateSelectInput(
+      session = session,
+      inputId = "select_factor",
+      choices = v
+    )
   })
 
   ### Select country onchange ----
@@ -346,16 +356,13 @@ server <- function(input, output, session) {
   observeEvent(
     input$slider_year,
     {
-      message("Handling onchange event for slider_year...")
+      message("Handling onchange event for slider_year... DO NOTHING")
 
       #freezeReactiveValue(input, "slider_year")
-
-      # filter down # TODO if happy data is reactive, it should automatically update when years changes, right?
-    },
-    ignoreInit = TRUE
+    }
   )
 
-  ### Handling change to select_factor
+  ### select factor onchange
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
@@ -363,13 +370,13 @@ server <- function(input, output, session) {
     #browser()
 
     # Updating scatter plot ----
-    if (input$select_factor != '') {
+    if (!is.null(factor())) {
       output$plot_scatter <- renderPlotly({
         happy_data() |>
           ggplot() +
           geom_point(
             aes(
-              x = !!sym(input$select_factor), # TODO Y U NO WORK U FUK
+              x = !!sym(factor()), # TODO Y U NO WORK U FUK
               y = `Happiness Score`
             )
           ) +
@@ -378,6 +385,7 @@ server <- function(input, output, session) {
 
       # update the box title for the scatter plot as well
       updateBox(
+        session = session,
         id = "box_plot_scatter",
         action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
         options = list(
@@ -402,16 +410,42 @@ server <- function(input, output, session) {
   output$DT_alldata <- renderDT({
     message("Updating DataTable...")
 
-    # pass through the whole dataframe (only filtered by year, basic mutation of country names), but ordered by happiness rank
-    happy_data() # |>
-    # mutate(Country = fct_reorder(Country, `Happiness Rank`)) # this should sort the df by happiness rank ASC, # This mutate chokes the interpretter
+    # pass through all countries, with the selected_country col, and order by happiness score DESC
+
+    # This doesn't fucking work...
+    # happy_data() |>
+    #   mutate(
+    #     Country = forcats::fct_reorder(
+    #       Country,
+    #       `Happiness Score`,
+    #       .desc = TRUE,
+    #       .na_rm = TRUE
+    #     )
+    #   ) # this should sort the df by happiness score
+
+    # Nor this ...
+    # ordered_happy_data <- happy_data()[order(happy_data()$`Happiness Score`), ]
+
+    # ... nor this one ...
+    # TODO WTF IS WRONG WITH YOU DEVIL CODE
+    # ordered_happy_data <- happy_data() |>
+    #   mutate(
+    #     Country = forcats::fct_reorder(
+    #       happy_data()$Country,
+    #       happy_data()$`Happiness Score`,
+    #       .desc = TRUE,
+    #       .na_rm = TRUE
+    #     )
+    #   )
+
+    # return(ordered_happy_data)
   })
 
   ### Update world map plot ----
   output$plot_map <- renderPlotly({
     message("Updating World Map Plot...")
 
-    world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
+    #world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
 
     # dataset_countries <- sort(unique(dat$Country))
     # world_data_countries <- sort(unique(world$name))
@@ -432,33 +466,30 @@ server <- function(input, output, session) {
   ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
     # don't try to render plotly if country hasn't been selected yet
-    if (input$select_country != '') {
-      # using country() pisses it off, but using input$select_country ALSO pisses it off, fuck me
-      #req(input$select_country)
+    req(country())
 
-      happy_data() |>
+    happy_data() |>
 
-        # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
-        # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
-        ggplot(
-          aes(
-            x = `Happiness Rank`,
-            y = Country
-            #fill = highlight_country # TODO Fix this ASAP, bullshit
-          )
-        ) +
-        geom_col() +
-        scale_x_continuous(
-          labels = comma_format()
-        ) +
-        theme(
-          legend.position = "none"
-        ) +
-        labs(
-          y = NULL,
-          x = "Happiness Rank"
+      # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
+      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
+      ggplot(
+        aes(
+          x = `Happiness Rank`,
+          y = Country
+          #fill = highlight_country # TODO Fix this ASAP, bullshit
         )
-    }
+      ) +
+      geom_col() +
+      scale_x_continuous(
+        labels = comma_format()
+      ) +
+      theme(
+        legend.position = "none"
+      ) +
+      labs(
+        y = NULL,
+        x = "Happiness Rank"
+      )
   })
 
   ### Report button handling ----
@@ -489,11 +520,12 @@ server <- function(input, output, session) {
 
       params <- list(
         # prepare the report parameters
-        country = input$select_country,
-        linear_regression = input$show_linear_regression,
-        year_start = input$slider_year[1],
-        year_end = input$slider_year[2],
+        country = country(),
+        linear_regression = show_linear_regression(),
+        year_start = years()[1],
+        year_end = years()[2],
         dat = happy_data(), # already filtered by year, and should have highlight_country set
+        # TODO should I pass world data, happy+world data, or just let the Rmd report figure it out?
         fulldat = df() # also pass along the full unmodified df in case we want to compare specific country to all countries
       )
 
@@ -501,7 +533,7 @@ server <- function(input, output, session) {
       rmarkdown::render(
         tempReport,
         output_file = file,
-        params = params, # TODO Warning: Error in knit_params_get: render params not declared in YAML: cases, filter TODO WTF Tried putting them in yaml of the report.Rmd
+        params = params, # TODO verify YAML in report.Rmd file
         envir = new.env(parent = globalenv()) # TODO google this line and learn what it does. environment variables copy to scope of report?
       )
     }
