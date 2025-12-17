@@ -503,9 +503,10 @@ server <- function(input, output, session) {
   })
 
   ### Report button handling ----
+  # Wondering if I need this entire observeEvent at all... Technically there is no input$btn_report ... the download button is an OUTPUT id of btn_report...
   observeEvent(input$btn_report, {
     # how does this get called exactly?
-    message("Report generating...")
+    message("Report generating...") # I don't think I've ever seen this LOC run... hmmmmm....
 
     # handling the report button press
     rmarkdown::render(
