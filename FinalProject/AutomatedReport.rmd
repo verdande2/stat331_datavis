@@ -13,13 +13,12 @@ output:
 params:
   dat: NULL
   linear_regression: NULL
-  year_start: NULL
-  year_end: NULL
+  year: NULL
   fulldat: NULL
   country: NULL
     
     
-title: "`r params$country` Happiness Report `r params$year_start`-`r params$year_end`"         
+title: "`r params$country` Happiness Report `r params$year`"         
 subtitle: "Country Happiness Report"
 ---
 

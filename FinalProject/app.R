@@ -30,6 +30,8 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 
 ## Global Variables ----
+default_data_path <- "world_happiness_report.csv"
+
 
 ## ui definition (dashboardPage) ----
 ui <- dashboardPage(
@@ -75,7 +77,7 @@ ui <- dashboardPage(
             min = 0,
             max = 0,
             step = 0,
-            value = c(0, 0),
+            value = 0,
             label = "Year Filter",
             sep = "" # remove comma delimited numbers
           ),
@@ -197,90 +199,9 @@ ui <- dashboardPage(
 
 ## Server Function Definition ----
 server <- function(input, output, session) {
-  ## Handle file upload ----
-  df <- reactive({
-    # Keeping the full unmodified data frame in df
-    req(input$file_upload) # required id upload
-
-    message("Detected file upload...")
-
-    ext <- tools::file_ext(input$file_upload$name)
-    switch(
-      ext,
-      csv = suppressMessages(
-        # make vroom stfu
-        vroom::vroom(
-          input$file_upload$datapath,
-          delim = ",",
-          progress = FALSE,
-          show_col_types = FALSE,
-          col_types = cols()
-        )
-      ),
-      validate("Invalid file; Please upload a .csv file")
-    )
-  })
-
-  ## make reactive variables out of our filters in the sidebar, as they will be used to update other reactive elements
-  country <- reactive({
-    input$select_country
-  })
-  factor <- reactive({
-    input$select_factor
-  })
-  years <- reactive({
-    input$slider_year
-  })
-  show_linear_regression <- reactive({
-    input$show_linear_regression
-  })
-
-  ## Mangle dataset into a dataframe ----
-
-  happy_data <- reactive({
-    # happy_data will represent the filtered/mutated subset that will be used to plot
-
-    req(years())
-    req(country())
-    message("Cleaning up dataset...")
-
-    ### Mutate the data as needed ----
-
-    #filter(year %in% c(2015, 2016)) |> # for now, looking at a subset of the data due to so much incompleteness for years past 2016
-
-    # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
-    # dat |> # TODO mutate me !
-    #   rename()
-
-    # TODO fix the descrepancies. United States =/= United States of America, etc
-
-    dat <- df() |>
-      mutate(
-        # add a col representing the selected country to highlight
-        selected_country = if_else(Country == country(), "Y", "N")
-      )
-
-    if (years()[1] != 0 && years()[2] != 0) {
-      dat <- dat |>
-        filter(
-          # filter down to the selected years
-          df()$year >= years()[1],
-          df()$year <= years()[2]
-        )
-    }
-
-    #browser()
-    return(dat)
-  })
-
-  ## Update static elements ----
-
-  ## Update dynamic elements  ----
-
-  ### file upload onchange ----
-  observeEvent(input$file_upload, {
-    message("File Upload initiated...")
-
+  # a function to encapsulate all the updates to the ui that need to be done once data is loaded
+  # Note this function depends on happy_data() being defined, so has to be called /after/ that
+  update_all_dynamic_elements <- function(session) {
     message("Updating the select_country element with the list of countries...")
     updateSelectInput(
       session = session,
@@ -295,10 +216,7 @@ server <- function(input, output, session) {
       inputId = "slider_year",
       min = min(happy_data()$year, na.rm = T),
       max = max(happy_data()$year, na.rm = T),
-      value = c(
-        min(happy_data()$year, na.rm = T),
-        max(happy_data()$year, na.rm = T)
-      ), # default to select full range
+      value = min(happy_data()$year, na.rm = T), # default to min year
       step = 1
     )
 
@@ -324,6 +242,119 @@ server <- function(input, output, session) {
       inputId = "select_factor",
       choices = v
     )
+  }
+
+  ## Handle file upload/default dataset load ----
+  df <- reactive({
+    # Keeping the full unmodified data frame in df
+
+    # if a file upload is detected...
+    if (!is.null(input$file_upload)) {
+      message("Detected file upload...")
+
+      # switch based on extension, TODO could tidy this up and reduce duplicate code, on the todo list, as I'm only supporting csv officially
+      ext <- tools::file_ext(input$file_upload$name)
+      switch(
+        ext,
+        csv = suppressMessages(
+          # make vroom stfu
+          vroom::vroom(
+            input$file_upload$datapath,
+            delim = ",", # csv file, duh
+            progress = FALSE, # stfu
+            show_col_types = FALSE, # stfu
+            col_types = cols() # stfu
+          )
+        ),
+        validate("Invalid file; Please upload a .csv file")
+      )
+    } else {
+      # no file upload detected, load default dataset
+      message(paste0("Loading default dataset: ", default_data_path, "..."))
+
+      suppressMessages(
+        # make vroom stfu
+        vroom::vroom(
+          file = default_data_path,
+          delim = ",", # csv file, duh
+          progress = FALSE, # stfu
+          show_col_types = FALSE, # stfu
+          col_types = cols() # stfu
+        )
+      )
+
+      # now, after loading into df, still need to call update_all_dynamic_elements() somewhere, but it depends on happy_data(), so it needs to be called /after/ happy_data() def, right?
+    }
+
+    # update elements after dataset loaded, that makes sense, right? NOOOOOOOOOOOOOOOOOOOO infinite recursive death spiral!
+    # update_all_dynamic_elements(session = session)
+  })
+
+  ## make reactive variables out of our filters in the sidebar, as they will be used to update other reactive elements
+  country <- reactive({
+    input$select_country
+  })
+  factor <- reactive({
+    input$select_factor
+  })
+  year <- reactive({
+    input$slider_year
+  })
+  show_linear_regression <- reactive({
+    input$show_linear_regression
+  })
+
+  ## Mangle dataset into a dataframe ----
+
+  happy_data <- reactive({
+    # happy_data will represent the filtered/mutated subset that will be used to plot
+
+    # do I need these reqs? no, default for country is handled as an unintentional side effect, and I check if years()[] have been set below, so not needed
+    #req(years())
+    #req(country())
+    # don't need linear regression checkbox technically, it's state just determines if we plot a geom_smooth/linregression etc
+    message("Making happy_data() more happy...")
+
+    ### Mutate the data as needed ----
+
+    #filter(year %in% c(2015, 2016)) |> # for now, looking at a subset of the data due to so much incompleteness for years past 2016
+
+    # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
+    # dat |> # TODO mutate me !
+    #   rename()
+    # TODO fix the discrepancies. United States =/= United States of America, etc
+
+    # starting with the full unmodified dataframe, df
+    dat <- df() |>
+      mutate(
+        # add a col representing the selected country to highlight
+        selected_country = if_else(Country == country(), "Y", "N") # this dngaf if country() is "Select Country" (the default), so no big deal
+      )
+
+    # only if the year slider has been changed, filter the dat further by the year slider criteria
+    if (year() != 0) {
+      dat <- dat |>
+        filter(
+          # filter down to the selected year
+          df()$year == year()
+        )
+    }
+
+    #browser()
+    return(dat)
+  })
+
+  ## Update static elements ----
+  # are there even any static elements that need updating? I'm going crazy...
+
+  ## Update dynamic elements  ----
+
+  ### file upload onchange ----
+  observeEvent(input$file_upload, {
+    message("File Upload initiated...")
+
+    # after a file upload has been initiated, update elements. makes sense.
+    update_all_dynamic_elements(session = session)
   })
 
   ### Select country onchange ----
@@ -333,7 +364,7 @@ server <- function(input, output, session) {
     #freezeReactiveValue(input, "select_country")
   })
 
-  ### Select country onchange ----
+  ### Slider year onchange ----
   observeEvent(
     input$slider_year,
     {
@@ -502,8 +533,7 @@ server <- function(input, output, session) {
         # prepare the report parameters
         country = country(),
         linear_regression = show_linear_regression(),
-        year_start = years()[1],
-        year_end = years()[2],
+        year = year(),
         dat = happy_data(), # already filtered by year, and should have highlight_country set
         # TODO should I pass world data, happy+world data, or just let the Rmd report figure it out?
         fulldat = df() # also pass along the full unmodified df in case we want to compare specific country to all countries
