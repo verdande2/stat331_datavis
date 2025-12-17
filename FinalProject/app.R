@@ -532,11 +532,11 @@ server <- function(input, output, session) {
       params <- list(
         # prepare the report parameters
         country = country(),
-        linear_regression = show_linear_regression(),
+        show_linear_regression = show_linear_regression(),
         year = year(),
-        dat = happy_data(), # already filtered by year, and should have highlight_country set
+        happy_data = happy_data(), # already filtered by year, and should have highlight_country set
         # TODO should I pass world data, happy+world data, or just let the Rmd report figure it out?
-        fulldat = df() # also pass along the full unmodified df in case we want to compare specific country to all countries
+        fulldata = df() # also pass along the full unmodified df in case we want to compare specific country to all countries
       )
 
       # barf out the rendered file

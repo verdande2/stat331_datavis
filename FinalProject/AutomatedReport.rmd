@@ -11,10 +11,10 @@ output:
     orientation: rows
 
 params:
-  dat: NULL
-  linear_regression: NULL
+  happy_data: NULL
+  show_linear_regression: NULL
   year: NULL
-  fulldat: NULL
+  fulldata: NULL
   country: NULL
     
     
@@ -40,6 +40,8 @@ library(usmap)
 library(fmsb)
 library(flexdashboard)
 ```
+
+Plotting linear regression/geom_smooth? `r params$show_linear_regression`
 
 World map here
 World ranking here
