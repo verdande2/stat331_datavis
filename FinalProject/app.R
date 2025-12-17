@@ -252,6 +252,7 @@ server <- function(input, output, session) {
   ## Handle file upload/default dataset load ----
   df <- reactive({
     # Keeping the full unmodified data frame in df
+    req(input$file_upload) # do I still need to req this?
 
     # if a file upload is detected...
     if (!is.null(input$file_upload)) {
@@ -276,6 +277,7 @@ server <- function(input, output, session) {
     } else {
       # TODO fix this eventually for my own sanity's sake
       return() # return early and skip default loading stuff for now, only allow file upload for time being
+
       # no file upload detected, load default dataset
       message(paste0("Loading default dataset: ", default_data_path, "..."))
 
@@ -317,8 +319,8 @@ server <- function(input, output, session) {
     # happy_data will represent the filtered/mutated subset that will be used to plot
 
     # do I need these reqs? no, default for country is handled as an unintentional side effect, and I check if years()[] have been set below, so not needed
-    #req(years())
-    #req(country())
+    req(year())
+    req(country())
     # don't need linear regression checkbox technically, it's state just determines if we plot a geom_smooth/linregression etc
     message("Making happy_data() more happy...")
 
@@ -385,6 +387,8 @@ server <- function(input, output, session) {
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
+    req(happy_data()) # bail early if no happy data
+
     freezeReactiveValue(input, "select_factor")
     #browser()
 
@@ -427,20 +431,27 @@ server <- function(input, output, session) {
   output$DT_alldata <- renderDT({
     message("Updating DataTable...")
 
+    req(year())
+    req(country())
+    req(happy_data())
+
     # pass through all countries, with the selected_country col, and order by happiness score DESC
 
     # This doesn't fucking work...
-    dat <- happy_data() |>
-      mutate(
-        Country = forcats::fct_reorder(
-          Country,
-          `Happiness Score`,
-          .desc = TRUE,
-          .na_rm = TRUE
-        )
-      ) # this should sort the df by happiness score
+    # Warning: Error in mutate: ℹ In argument: `Country = forcats::fct_reorder(...)`.
+    # Caused by error in `lvls_reorder()`:
+    #   ! `idx` must contain one integer for each level of `f`
+    # dat <- happy_data() |>
+    #   mutate(
+    #     Country = forcats::fct_reorder(
+    #       Country,
+    #       `Happiness Score`,
+    #       .desc = TRUE,
+    #       .na_rm = TRUE
+    #     )
+    #   ) # this should sort the df by happiness score DESC
 
-    return(dat)
+    return(happy_data()) # TODO change this back to return(dat) when I figure out WTF is up with the mutate/fct_reorder above
 
     # Nor this ...
     # ordered_happy_data <- happy_data()[order(happy_data()$`Happiness Score`), ]
@@ -486,6 +497,8 @@ server <- function(input, output, session) {
   output$plot_ranking <- renderPlotly({
     # don't try to render plotly if country hasn't been selected yet
     req(country())
+    req(year())
+    req(happy_data())
 
     happy_data() |>
 
