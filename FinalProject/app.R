@@ -450,7 +450,7 @@ server <- function(input, output, session) {
     happy_data() |>
 
       # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
-      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one
+      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one (use min/max to prevent out of range indexes)
       ggplot(
         aes(
           x = `Happiness Rank`,
@@ -473,6 +473,7 @@ server <- function(input, output, session) {
 
   ### Report button handling ----
   observeEvent(input$btn_report, {
+    # how does this get called exactly?
     message("Report generating...")
 
     # handling the report button press
