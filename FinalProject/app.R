@@ -30,7 +30,6 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 
 ## Global Variables ----
-world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
 
 ## ui definition (dashboardPage) ----
 ui <- dashboardPage(
@@ -39,7 +38,7 @@ ui <- dashboardPage(
   ## Header ----
   header = dashboardHeader(
     title = "World Happiness Dashboard",
-    titleWidth = 400,
+    titleWidth = 400, # TODO figure out how this relates to sidebar width
     compact = TRUE,
     border = TRUE,
     status = "purple"
@@ -48,38 +47,6 @@ ui <- dashboardPage(
   ## Sidebar ----
   sidebar = dashboardSidebar(
     # TODO figure out how to increase the width of the sidemenu
-    # TODO this custom CSS does not in fact help any of the issues I was hoping it would. Fuck.
-    # Custom CSS Tweaks
-    tags$head(
-      tags$style(HTML(
-        "
-        /* Ensure the dropdown menu appears above other elements */
-        .sidebar .bs4-dropdown-menu {
-          position: absolute !important;
-          border: 10px red solid !important;
-          z-index: 1060 !important; /* Higher than typical content z-index */
-        }
-        /* If using shiny inputs like pickerInput or selectInput, target their dropdowns */
-        .selectize-dropdown {
-          z-index: 1060 !important;
-        }
-        .picker-menu {
-          z-index: 1060 !important;
-        }
-        /* Target the main sidebar and its inner viewport containers */
-        .main-sidebar,
-        .main-sidebar .sidebar .os-viewport,
-        .os-host-overflow,
-        .os-host-overflow > .os-padding {
-          overflow: visible !important;
-        }
-        /* Ensure the dropdown menu itself displays correctly */
-        .dropdown-menu.show {
-          display: block; /* Use 'block' or 'contents' depending on exact BS version */
-        }
-      "
-      ))
-    ),
     collapsed = FALSE, # TODO figure out how to either un-autohide the sidemenu, or adjust it so that it collapses fully, vs expands fully
     status = "primary",
     elevation = 5,
@@ -443,6 +410,9 @@ server <- function(input, output, session) {
   ### Update world map plot ----
   output$plot_map <- renderPlotly({
     message("Updating World Map Plot...")
+
+    world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
+
     # dataset_countries <- sort(unique(dat$Country))
     # world_data_countries <- sort(unique(world$name))
 
