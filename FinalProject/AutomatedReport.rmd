@@ -7,6 +7,8 @@ output:
     code_folding: hide
   word_document: default
   pdf_document: default
+  flexdashboard::flex_dashboard:
+    orientation: rows
 
 params:
   dat: NULL
@@ -17,8 +19,8 @@ params:
   country: NULL
     
     
-title: "`r params$country` Happiness Report"         
-subtitle: "World Happiness Report"
+title: "`r params$country` Happiness Report `r params$year_start`-`r params$year_end`"         
+subtitle: "Country Happiness Report"
 ---
 
 
@@ -30,11 +32,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Source
+World map here
+World ranking here
+Individual stats and happiness score/ranking infoboxes
+```{r}
+# TODO figure out how to make these god damn valueboxes work to display the factors for the selected country
+#valueBox(h1("comments"), icon = "fa-comments")
+```
 
-
-
-## Output
 
 ```{r includes}
 # TODO update all this file!
@@ -43,7 +48,7 @@ library(readr)
 library(scales)
 library(usmap)
 library(fmsb)
-
+library(flexdashboard)
 ```
 
 ```{r global_variables}
