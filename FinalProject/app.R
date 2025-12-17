@@ -274,6 +274,8 @@ server <- function(input, output, session) {
         validate("Invalid file; Please upload a .csv file")
       )
     } else {
+      # TODO fix this eventually for my own sanity's sake
+      return() # return early and skip default loading stuff for now, only allow file upload for time being
       # no file upload detected, load default dataset
       message(paste0("Loading default dataset: ", default_data_path, "..."))
 
@@ -428,15 +430,17 @@ server <- function(input, output, session) {
     # pass through all countries, with the selected_country col, and order by happiness score DESC
 
     # This doesn't fucking work...
-    # happy_data() |>
-    #   mutate(
-    #     Country = forcats::fct_reorder(
-    #       Country,
-    #       `Happiness Score`,
-    #       .desc = TRUE,
-    #       .na_rm = TRUE
-    #     )
-    #   ) # this should sort the df by happiness score
+    dat <- happy_data() |>
+      mutate(
+        Country = forcats::fct_reorder(
+          Country,
+          `Happiness Score`,
+          .desc = TRUE,
+          .na_rm = TRUE
+        )
+      ) # this should sort the df by happiness score
+
+    return(dat)
 
     # Nor this ...
     # ordered_happy_data <- happy_data()[order(happy_data()$`Happiness Score`), ]
