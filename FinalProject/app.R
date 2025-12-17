@@ -453,7 +453,7 @@ server <- function(input, output, session) {
       # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one (use min/max to prevent out of range indexes)
       ggplot(
         aes(
-          x = `Happiness Rank`,
+          x = `Happiness Score`,
           y = Country
           #fill = highlight_country # TODO Fix this ASAP, bullshit
         )
@@ -467,7 +467,7 @@ server <- function(input, output, session) {
       ) +
       labs(
         y = NULL,
-        x = "Happiness Rank"
+        x = "Happiness Score"
       )
   })
 
