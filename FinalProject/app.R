@@ -25,6 +25,7 @@ library(bs4Dash)
 library(DT)
 library(readr)
 library(scales)
+library(waiter)
 library(rworldmap)
 library(rnaturalearth)
 library(rnaturalearthdata)
@@ -104,6 +105,7 @@ ui <- dashboardPage(
 
   ## Body ----
   body = dashboardBody(
+    autoWaiter(), # hopefully this is a good spot for the autowaiter call? Seems so
     tabItems(
       ### Main Tab ----
       tabItem(
