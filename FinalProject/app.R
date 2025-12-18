@@ -20,8 +20,8 @@ library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(shinyWidgets)
-library(plotly)
 library(ggplot2)
+library(plotly)
 library(dplyr)
 library(bslib)
 library(bs4Dash)
@@ -46,11 +46,9 @@ ui <- dashboardPage(
   header = dashboardHeader(
     title = "World Happiness Dashboard",
     titleWidth = "200px", # TODO figure out how this relates to sidebar width
-    compact = TRUE,
-    border = TRUE,
-    status = "purple",
+    #status = "purple",
     fixed = TRUE,
-    rightUi = tagList(
+    leftUi = tagList(
       dropdownMenu(
         icon = icon("tasks"),
         type = "tasks",
@@ -60,12 +58,10 @@ ui <- dashboardPage(
           # for progress bar async, try https://www.rdocumentation.org/packages/ipc/versions/0.1.4/topics/AsyncProgress
           inputId = "report_progress",
           value = 50,
-          color = "primary",
+          color = "orange",
           "Report Generating..."
         )
-      )
-    ),
-    leftUi = tagList(
+      ),
       dropdownBlock(
         id = "debug_dropdown",
         title = "Debug",
@@ -245,7 +241,7 @@ ui <- dashboardPage(
   ## Footer ----
   footer = dashboardFooter(
     right = "STAT331 Data Visualization and Dashboards - Fall '25 - Professor Joseph Reid - Oregon Institute of Technology - Final Project - Andrew Sparkes",
-    left = textOutput(outputId = "status", inline = TRUE),
+    #left = textOutput(outputId = "status", inline = TRUE),
     fixed = TRUE # stick to bottom of page
   )
 )
@@ -629,23 +625,6 @@ server <- function(input, output, session) {
           )
         ) # this should sort the df by happiness score DESC
     )
-
-    # Nor this ...
-    # ordered_happy_data <- happy_data()[order(happy_data()$`Happiness Score`), ]
-
-    # ... nor this one ...
-    # TODO WTF IS WRONG WITH YOU DEVIL CODE
-    # ordered_happy_data <- happy_data() |>
-    #   mutate(
-    #     Country = forcats::fct_reorder(
-    #       happy_data()$Country,
-    #       happy_data()$`Happiness Score`,
-    #       .desc = TRUE,
-    #       .na_rm = TRUE
-    #     )
-    #   )
-
-    # return(ordered_happy_data)
   })
 
   ### Update world map plot ----
@@ -672,33 +651,130 @@ server <- function(input, output, session) {
 
   ### Update World Ranking plot ----
   output$plot_ranking <- renderPlotly({
-    # don't try to render plotly if country hasn't been selected yet
+    # don't try to render plotly if filters haven't been selected yet
     req(country())
     req(year())
     req(happy_data())
 
-    # first, find the idx of the country()
-    idx <- which(happy_data()$Country == country())
+    #browser() # to verify that the happy_data() coming in is already sorted and has highlight_country set => happy_data() is arranged, but not sorted by factor Happiness Score ... must use forcats::fct_reorder() and make it work
+
+    # right off the bat, let's sort this df by factor `Happiness Score` DESC
+    sorted_happy_data <- happy_data() |>
+      mutate(
+        `Country` = forcats::fct_reorder(
+          `Country`,
+          `Happiness Score`,
+          #.desc = TRUE, # desc order
+          .na_rm = TRUE # remove na data
+        )
+      ) # this should sort the df by happiness score DESC
+
+    #browser() # to verify happy_data() is getting properly fct_reordered into sorted_happy_data
+
+    # first, find the idx of the selected country()
+    idx <- which(sorted_happy_data$Country == country())
 
     # Specify the number of rows before and after
-    n_rows <- 15 # 15 before and after should return at maximum 31 rows, min 16 rows
+    n_rows <- 12 # 12 before and after should return at maximum 25 rows, min 13 rows which we'll expand later
+
+    max_rows <- 25
 
     # Calculate the start and end indices
     # pmax ensures the start index is at least 1
     # pmin ensures the end index does not exceed the total number of rows
     start_idx <- pmax(1, idx - n_rows)
-    end_idx <- pmin(nrow(happy_data()), idx + n_rows)
+    end_idx <- pmin(nrow(sorted_happy_data), idx + n_rows)
 
-    # TODO could do better logic so that not only does it pull n_rows before and after, but ensure that the total number of rows is 30 let's say, so that we don't have a idx=1, and a ranking of only the selected country and the 15 rows after
+    # look at the initial slicing and see how it fares compared to our max_rows arg
+    sliced_happy_data <- sorted_happy_data |>
+      slice(start_idx:end_idx)
 
-    #browser() # use this breakpoint to investigate the index values from above
-    happy_data() |>
-      slice(start_idx:end_idx) |> # Select the rows using slice()
+    current_nrows <- nrow(sliced_happy_data)
+
+    # debug sanity check
+    message(
+      paste0(
+        "Before adjustment: start_idx: ",
+        start_idx,
+        " | idx: ",
+        idx,
+        " | end_idx: ",
+        end_idx,
+        " | Total Rows: ",
+        current_nrows
+      )
+    )
+
+    # handle the case where we don't have enough rows selected to hit our max_rows
+    if (current_nrows < max_rows) {
+      # need to add more rows to hit our max_rows goal
+
+      if (start_idx < n_rows + 1) {
+        # idx < 1 + n_rows
+        # we're at the start of the list, so we have start_idx<n_rows+1
+
+        message(
+          paste0(
+            "At beginning of ranked list => Adding ",
+            (max_rows - current_nrows),
+            " to end_idx: ",
+            end_idx
+          )
+        )
+
+        # solution: increase end_idx so that the difference between max_rows and current_nrows is 0
+        end_idx <- end_idx + (max_rows - current_nrows)
+      } else if (end_idx >= current_nrows - (n_rows + 1)) {
+        # the end_idx is the final chunk in the df
+
+        message(
+          paste0(
+            "At end of ranked list => Subtracting ",
+            (max_rows - current_nrows),
+            " from start_idx: ",
+            start_idx
+          )
+        )
+
+        # solution, decrease the start_idx until we have our desired max_rows
+        start_idx <- start_idx - (max_rows - current_nrows)
+      } else {
+        # both start and end idx are away from the beginning/end of the df, so let the indexes pass through normally
+
+        message("No adjustment to indices needed!")
+      }
+
+      # reslice the data with the newly adjusted indices
+      sliced_happy_data <- sorted_happy_data |>
+        slice(start_idx:end_idx)
+
+      # not really needed, but recalculating the current num of rows in sliced_happy_data(), to output later
+      current_nrows <- nrow(sliced_happy_data)
+
+      # debug sanity check
+      message(
+        paste0(
+          "After adjustment: start_idx: ",
+          start_idx,
+          " | idx: ",
+          idx,
+          " | end_idx: ",
+          end_idx,
+          " | Total Rows: ",
+          current_nrows
+        )
+      )
+    }
+
+    # TODO there has to be a better way to select from a df where a column value matches, and also return the previous n rows and next n rows, so that the selected country is in the middle of the ranked listing, while still taking into consideration the min and max indices for the set of rows
+
+    # TODO add title, subtitle, etc to plot below:
+    sliced_happy_data |> # pass the sliced dataset
       ggplot(
         aes(
           x = `Happiness Score`,
           y = Country,
-          fill = highlight_country # TODO Fix this ASAP, bullshit
+          fill = highlight_country
         )
       ) +
       geom_col() +
@@ -763,25 +839,25 @@ server <- function(input, output, session) {
   )
 
   ### help dialog toggle ----
-  observe({
-    if (input$help_switch == TRUE) {
-      if (input$sidebar == "main") {
-        shiny::showModal(
-          ui = shiny::modalDialog(
-            title = "Help",
-            "Help Contents Here" # TODO Doc me
-          )
-        )
-      } else if (input$sidebar == "report") {
-        shiny::showModal(
-          ui = shiny::modalDialog(
-            title = "Help: Reports",
-            "Help info for report settings" # TODO Doc me
-          )
-        )
-      }
-    }
-  })
+  # observe({
+  #   if (input$help_switch == TRUE) {
+  #     if (input$sidebar == "main") {
+  #       shiny::showModal(
+  #         ui = shiny::modalDialog(
+  #           title = "Help",
+  #           "Help Contents Here" # TODO Doc me
+  #         )
+  #       )
+  #     } else if (input$sidebar == "report") {
+  #       shiny::showModal(
+  #         ui = shiny::modalDialog(
+  #           title = "Help: Reports",
+  #           "Help info for report settings" # TODO Doc me
+  #         )
+  #       )
+  #     }
+  #   }
+  # })
 }
 
 
