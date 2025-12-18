@@ -71,7 +71,7 @@ ui <- dashboardPage(
           selectInput(
             inputId = "select_country",
             label = "Choose Country",
-            choices = "Select Country"
+            choices = NULL
           ),
           sliderInput(
             inputId = "slider_year",
@@ -80,8 +80,10 @@ ui <- dashboardPage(
             step = 0,
             value = 0,
             label = "Year Filter",
-            sep = "" # remove comma delimited numbers
+            sep = "", # remove comma delimited numbers
+            ticks = TRUE
           ),
+          textOutput(outputId = "year_status", inline = TRUE),
           card_body(
             "Note: Data is incomplete for years beyond 2015 and 2016. Proceed at your own risk."
           ),
@@ -116,6 +118,7 @@ ui <- dashboardPage(
         fluidRow(
           ### Scatter Plot ----
           box(
+            width = 12,
             id = "box_plot_scatter",
             title = "Scatter Plot",
 
@@ -128,7 +131,7 @@ ui <- dashboardPage(
 
             plotlyOutput(
               outputId = "plot_scatter",
-              width = "800px",
+              width = "100%",
               height = "400px"
             )
           )
@@ -157,31 +160,32 @@ ui <- dashboardPage(
           )
         ),
 
-        ### Additional Plots ----
-        fluidRow(
-          column(
-            6,
-            plotlyOutput(
-              outputId = "plot_1",
-              width = "100%",
-              height = "400px"
-            )
-          ),
-          column(
-            6,
-            plotlyOutput(
-              outputId = "plot_2",
-              width = "100%",
-              height = "400px"
-            )
-          )
-        ),
+        ### Additional Plots ---- Aren't being used rn
+        # fluidRow(
+        #   column(
+        #     6,
+        #     plotlyOutput(
+        #       outputId = "plot_1",
+        #       width = "100%",
+        #       height = "400px"
+        #     )
+        #   ),
+        #   column(
+        #     6,
+        #     plotlyOutput(
+        #       outputId = "plot_2",
+        #       width = "100%",
+        #       height = "400px"
+        #     )
+        #   )
+        # ),
+
         fluidRow(
           ### DataTable output ----
           box(
             title = "Data Table",
             width = 12,
-            closable = TRUE,
+            collapsible = TRUE,
             DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
           )
         )
@@ -190,7 +194,7 @@ ui <- dashboardPage(
       ## Second Tab ----
       tabItem(
         tabName = "report",
-        "Any Report settings here. Country and year select mainly. Probably don't need this...."
+        "Any Report settings here. Country and year select mainly. Probably don't need this.... Not really using the tabpanel link to tabname feature in the sidebar, using them more like accordions, eh...."
       )
     )
   ),
@@ -204,51 +208,6 @@ ui <- dashboardPage(
 
 ## Server Function Definition ----
 server <- function(input, output, session) {
-  # a function to encapsulate all the updates to the ui that need to be done once data is loaded
-  # Note this function depends on happy_data() being defined, so has to be called /after/ that
-  update_all_dynamic_elements <- function(session) {
-    message("Updating the select_country element with the list of countries...")
-    updateSelectInput(
-      session = session,
-      inputId = "select_country",
-      choices = sort(unique(happy_data()$Country)), # unique to remove duplicates
-      selected = NULL
-    )
-
-    message("Updating the slider element with min/max and setting value...")
-    updateSliderInput(
-      session = session,
-      inputId = "slider_year",
-      min = min(happy_data()$year, na.rm = T),
-      max = max(happy_data()$year, na.rm = T),
-      value = min(happy_data()$year, na.rm = T), # default to min year
-      step = 1
-    )
-
-    # get a vector of the available factors
-    v <- c(
-      "Economy (GDP per Capita)",
-      "Family",
-      "Health (Life Expectancy)",
-      "Freedom",
-      "Trust (Government Corruption)",
-      "Generosity",
-      "Dystopia Residual"
-    )
-
-    v <- sort(v) # alphabetize just for presentation's sake
-
-    ### Populate the select_factor select with available factors ----
-    message(
-      "Updating the choices in the select_factor dropdown for main scatter plot..."
-    )
-    updateSelectInput(
-      session = session,
-      inputId = "select_factor",
-      choices = v
-    )
-  }
-
   ## Handle file upload/default dataset load ----
   df <- reactive({
     # Keeping the full unmodified data frame in df
@@ -319,14 +278,14 @@ server <- function(input, output, session) {
     # happy_data will represent the filtered/mutated subset that will be used to plot
 
     # do I need these reqs? no, default for country is handled as an unintentional side effect, and I check if years()[] have been set below, so not needed
-    req(year())
-    req(country())
-    # don't need linear regression checkbox technically, it's state just determines if we plot a geom_smooth/linregression etc
+    #req(year())
+    #req(country())
+    #req(df())
+
+    # don't need linear regression checkbox technically, it's state just determines if we plot a geom_smooth/linregression etc and doesn't affect the df
     message("Making happy_data() more happy...")
 
     ### Mutate the data as needed ----
-
-    #filter(year %in% c(2015, 2016)) |> # for now, looking at a subset of the data due to so much incompleteness for years past 2016
 
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
     # dat |> # TODO mutate me !
@@ -334,23 +293,40 @@ server <- function(input, output, session) {
     # TODO fix the discrepancies. United States =/= United States of America, etc
 
     # starting with the full unmodified dataframe, df
-    dat <- df() |>
-      mutate(
-        # add a col representing the selected country to highlight
-        selected_country = if_else(Country == country(), "Y", "N") # this dngaf if country() is "Select Country" (the default), so no big deal
-      )
+    dat <- df() # so, this should be evaluating the df() reactive, and assigning it to dat, a local function-scope var
+
+    #browser()
+    dat <- dat |>
+      select(-`...1`) # remove bullshit id/pk/whatever the hell this was, artifact from read_csv TODO research why
+
+    # for now, looking at a subset of the data due to so much incompleteness for years past 2016
+    dat <- dat |>
+      filter(year %in% c(2015, 2016))
+
+    if (!is.null(country())) {
+      # if a country has been selected, add the selected_country col to highlight it later
+      dat <- dat |>
+        mutate(
+          # add a col representing the selected country to highlight
+          highlight_country = if_else(Country == country(), "Y", "N") # this dngaf if country() is "" (the default), so no big deal
+        )
+    }
 
     # only if the year slider has been changed, filter the dat further by the year slider criteria
     if (year() != 0) {
       dat <- dat |>
         filter(
           # filter down to the selected year
-          df()$year == year()
+          dat$year == year()
         )
     }
 
-    #browser()
-    return(dat)
+    # we should probably do a default sort on this reactive, sort by year asc, then happiness score desc
+    dat <- dat |>
+      relocate(year, `Happiness Score`, Country, highlight_country, Region) |> # reorder the cols so they're easier for me to debug
+      arrange(year, desc(`Happiness Score`)) # sorts by year, then by happiness score highest to lowest, ie. same as rank, but grouped (not really) by year ASC 2015-2022
+
+    return(dat) # should be the exact same as original df() if no filters have been selected. dat is a local copy of a modified reactive value
   })
 
   ## Update static elements ----
@@ -362,8 +338,49 @@ server <- function(input, output, session) {
   observeEvent(input$file_upload, {
     message("File Upload initiated...")
 
+    # don't need this req(happy_data()) # bail early if no happy data
+    # so, at this point, df() returns the tibble as expected... ok...
+    #browser()
+
+    countries <- sort(unique(happy_data()$Country)) # rip out the Country col to populate select options below, unique removes dupes, and alphabetize for making it pretty
+
     # after a file upload has been initiated, update elements. makes sense.
-    update_all_dynamic_elements(session = session)
+    message("Updating the select_country element with the list of countries...")
+    updateSelectInput(
+      session = session,
+      inputId = "select_country",
+      choices = countries,
+      selected = countries[1] # default to first entry in countries (Afghanistan)
+    )
+
+    message("Updating slider_year with min/max and set value...")
+    updateSliderInput(
+      session = session,
+      inputId = "slider_year",
+      min = min(happy_data()$year, na.rm = T),
+      max = max(happy_data()$year, na.rm = T),
+      value = min(happy_data()$year, na.rm = T), # default to min year
+      step = 1
+    )
+
+    # make a vector of the available factors (alphabetized)
+    v <- c(
+      "Dystopia Residual",
+      "Economy (GDP per Capita)",
+      "Family",
+      "Freedom",
+      "Generosity",
+      "Health (Life Expectancy)",
+      "Trust (Government Corruption)"
+    ) # TODO take the names/cols of the happy_data df, use setdiff() to remove blacklisted columns, then populate v with those
+
+    ### Populate the select_factor select with available factors ----
+    message("Updating the choices in the select_factor dropdown...")
+    updateSelectInput(
+      session = session,
+      inputId = "select_factor",
+      choices = v
+    )
   })
 
   ### Select country onchange ----
@@ -380,6 +397,16 @@ server <- function(input, output, session) {
       message("Handling onchange event for slider_year... DO NOTHING")
 
       #freezeReactiveValue(input, "slider_year")
+
+      if (!(year() %in% c(2015, 2016))) {
+        output$year_status <- renderText({
+          "You selected a year with incomplete data. Here be dragons. You've been warned..."
+        })
+      } else {
+        output$year_status <- renderText({
+          ""
+        })
+      }
     }
   )
 
@@ -387,22 +414,50 @@ server <- function(input, output, session) {
   observeEvent(input$select_factor, {
     message("Handling onchange event for select_factor...")
 
-    req(happy_data()) # bail early if no happy data
+    req(happy_data()) # bail early if no happy data]
+    req(factor()) # also needs factor too
 
-    freezeReactiveValue(input, "select_factor")
-    #browser()
+    #freezeReactiveValue(input, "select_factor") # freezeReactiveValue : if vlue is acccesed while frozen, it throws a SILENT excpetion.... wtf
 
     # Updating scatter plot ----
+    message("Updating scatter plot due to select_factor change...")
     output$plot_scatter <- renderPlotly({
-      happy_data() |>
+      # TODO make more useful tooltips, check https://plotly.com/r/hover-text-and-formatting/
+
+      plot <- happy_data() |>
         ggplot() +
         geom_point(
-          aes(
-            x = Country, #!!sym(factor()), # TODO Y U NO WORK U FUK
-            y = `Happiness Score`
+          mapping = aes(
+            x = !!sym(factor()), # black magic voodoo, but it works
+            y = `Happiness Score`,
+            fill = highlight_country,
+            color = highlight_country,
+            size = if_else(highlight_country == "Y", 2, 1.3) # double size for highlighted country
+            #alpha = if_else(highlight_country == "Y", 0.9, 0.8) # and more opaque maybe?
           )
         ) +
-        guides()
+        guides(
+          fill = "none",
+          color = "none",
+          alpha = "none"
+        ) # TODO should I add back in a legend? Fuck no, legends are dumb.
+
+      if (show_linear_regression() == TRUE) {
+        plot <- plot +
+          suppressMessages(
+            # make geom_smooth stfu about what method it chooses
+            geom_smooth(
+              formula = y ~ x,
+              mapping = aes(
+                x = !!sym(factor()),
+                y = `Happiness Score`
+              ),
+              method = "loess" # see https://ggplot2.tidyverse.org/reference/geom_smooth.html#arg-method for more info on smoothing methods
+            )
+          )
+      }
+
+      return(plot)
     })
 
     # update the box title for the scatter plot as well
@@ -411,11 +466,11 @@ server <- function(input, output, session) {
       id = "box_plot_scatter",
       action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
       options = list(
-        title = paste(
+        title = paste0(
           "Scatter Plot of ",
-          input$select_factor,
+          factor(),
           " and the resulting Happiness Score"
-        ) # TODO make this actually show a proper title
+        )
       )
     )
 
@@ -500,15 +555,28 @@ server <- function(input, output, session) {
     req(year())
     req(happy_data())
 
-    happy_data() |>
+    # first, find the idx of the country()
+    idx <- which(happy_data()$Country == country())
 
-      # TODO add a limit 35 or so, or paginate, but somehow also show the selected country? idfk
-      # possible idea: sort list by happiness rank, find idx of selected country, select where id >= idx-15 && id <= idx+15 or whatever, so it has the surrounding countries AND the selected one (use min/max to prevent out of range indexes)
+    # Specify the number of rows before and after
+    n_rows <- 15 # 15 before and after should return at maximum 31 rows, min 16 rows
+
+    # Calculate the start and end indices
+    # pmax ensures the start index is at least 1
+    # pmin ensures the end index does not exceed the total number of rows
+    start_idx <- pmax(1, idx - n_rows)
+    end_idx <- pmin(nrow(happy_data()), idx + n_rows)
+
+    # TODO could do better logic so that not only does it pull n_rows before and after, but ensure that the total number of rows is 30 let's say, so that we don't have a idx=1, and a ranking of only the selected country and the 15 rows after
+
+    #browser() # use this breakpoint to investigate the index values from above
+    happy_data() |>
+      slice(start_idx:end_idx) |> # Select the rows using slice()
       ggplot(
         aes(
           x = `Happiness Score`,
-          y = Country
-          #fill = highlight_country # TODO Fix this ASAP, bullshit
+          y = Country,
+          fill = highlight_country # TODO Fix this ASAP, bullshit
         )
       ) +
       geom_col() +
