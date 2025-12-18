@@ -56,7 +56,8 @@ ui <- dashboardPage(
         type = "tasks",
         badgeStatus = "primary",
         taskItem(
-          # TODO see https://shiny.posit.co/r/components/display-messages/progress-bar/ for more info on how to update the progress on this taskItem
+          # TODO see https://shiny.posit.co/r/components/display-messages/progress-bar/ for more info on how to update the progress on this taskItem, and this SO answer for a weird file read/write workaround ... https://stackoverflow.com/a/79118567
+          # for progress bar async, try https://www.rdocumentation.org/packages/ipc/versions/0.1.4/topics/AsyncProgress
           inputId = "report_progress",
           value = 50,
           color = "primary",
