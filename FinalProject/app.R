@@ -23,7 +23,6 @@ library(shinyWidgets)
 library(ggplot2)
 library(plotly)
 library(dplyr)
-library(bslib)
 library(bs4Dash)
 library(DT)
 library(readr)
@@ -33,10 +32,12 @@ library(htmltools)
 library(rworldmap)
 library(rnaturalearth)
 library(rnaturalearthdata)
+library(tinytex)
+library(stringr)
+library(bslib)
 
 ## Global Variables ----
-default_data_path <- "world_happiness_report.csv"
-
+#default_data_path <- "world_happiness_report.csv"
 
 ## ui definition (dashboardPage) ----
 ui <- dashboardPage(
@@ -45,8 +46,8 @@ ui <- dashboardPage(
   ## Header ----
   header = dashboardHeader(
     title = "World Happiness Dashboard",
-    titleWidth = "200px", # TODO figure out how this relates to sidebar width
-    #status = "purple",
+    titleWidth = "400px", # TODO figure out how this relates to sidebar width
+    status = "purple",
     fixed = TRUE,
     leftUi = tagList(
       dropdownMenu(
@@ -79,8 +80,6 @@ ui <- dashboardPage(
         # )
       )
     )
-
-    #tags$script("$('#browser').hide();") # default to hide the browser button, pffffft, gimme dev mode
   ),
 
   ## Sidebar ----
@@ -147,6 +146,8 @@ ui <- dashboardPage(
   ## Body ----
   body = dashboardBody(
     autoWaiter(), # hopefully this is a good spot for the autowaiter call? Seems so
+
+    ## Tabs ----
     tabItems(
       ### Main Tab ----
       tabItem(
@@ -154,7 +155,7 @@ ui <- dashboardPage(
         fluidRow(
           ### Scatter Plot ----
           box(
-            width = 12,
+            width = 6,
             id = "box_plot_scatter",
             title = "Scatter Plot",
 
@@ -169,6 +170,47 @@ ui <- dashboardPage(
               outputId = "plot_scatter",
               width = "100%",
               height = "400px"
+            )
+          ),
+          box(
+            width = 6,
+            id = "summary_stats",
+            title = "Summary Stats",
+            fluidRow(
+              valueBoxOutput(
+                outputId = "value_worldwide_mean_happiness_score",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_worldwide_median_happiness_score",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_variance_worldwide_happiness_score",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_std_dev_worldwide_happiness_score",
+                width = 3
+              )
+            ),
+            fluidRow(
+              valueBoxOutput(
+                outputId = "value_selected_country_happiness_score",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_selected_country_happiness_rank",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_lowest_worldwide_happiness_score",
+                width = 3
+              ),
+              valueBoxOutput(
+                outputId = "value_highest_worldwide_happiness_score",
+                width = 3
+              )
             )
           )
         ),
@@ -219,12 +261,13 @@ ui <- dashboardPage(
         fluidRow(
           ### DataTable output ----
           box(
-            title = "Data Table of filtered subset of dataset",
+            title = paste0("Data Table of filtered Happiness Data"),
             width = 12,
             collapsible = TRUE,
             DTOutput(
               outputId = "DT_filtered",
-              width = "100%" # TODO figure out how to adjust overflow settings
+              width = "100%",
+              height = "auto" # TODO figure out how to adjust overflow settings
             )
           )
         )
@@ -241,7 +284,7 @@ ui <- dashboardPage(
   ## Footer ----
   footer = dashboardFooter(
     right = "STAT331 Data Visualization and Dashboards - Fall '25 - Professor Joseph Reid - Oregon Institute of Technology - Final Project - Andrew Sparkes",
-    #left = textOutput(outputId = "status", inline = TRUE),
+    left = textOutput(outputId = "status", inline = TRUE),
     fixed = TRUE # stick to bottom of page
   )
 )
@@ -365,12 +408,7 @@ server <- function(input, output, session) {
           col_types = cols() # stfu
         )
       )
-
-      # now, after loading into df, still need to call update_all_dynamic_elements() somewhere, but it depends on happy_data(), so it needs to be called /after/ happy_data() def, right?
     }
-
-    # update elements after dataset loaded, that makes sense, right? NOOOOOOOOOOOOOOOOOOOO infinite recursive death spiral!
-    # update_all_dynamic_elements(session = session)
   })
 
   ## make reactive variables out of our filters in the sidebar, as they will be used to update other reactive elements
@@ -387,52 +425,39 @@ server <- function(input, output, session) {
     input$show_linear_regression
   })
 
-  ## Mangle dataset into a dataframe ----
+  ## Wrangle and Mangle dataset ----
 
   happy_data <- reactive({
     # happy_data will represent the filtered/mutated subset that will be used to plot
 
-    # do I need these reqs? no, default for country is handled as an unintentional side effect, and I check if years()[] have been set below, so not needed
     #req(year())
     #req(country())
     #req(df())
 
-    # don't need linear regression checkbox technically, it's state just determines if we plot a geom_smooth/linregression etc and doesn't affect the df
     message("Making happy_data() more happy...")
+
+    # starting with the full unmodified dataframe, df
+    dat <- df()
 
     ### Mutate the data as needed ----
 
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
-    # dat |> # TODO mutate me !
+    # dat <- dat |> # TODO fix the discrepancies. United States =/= United States of America, etc
     #   rename()
-    # TODO fix the discrepancies. United States =/= United States of America, etc
 
-    # starting with the full unmodified dataframe, df
-    dat <- df() # so, this should be evaluating the df() reactive, and assigning it to dat, a local function-scope var
-
-    #browser()
     dat <- dat |>
-      select(-`...1`) # remove bullshit id/pk/whatever the hell this was, artifact from read_csv TODO research why
+      select(-`...1`) # remove bullshit id/pk/whatever the hell this col was, artifact from read_csv TODO research why
 
     # for now, looking at a subset of the data due to so much incompleteness for years past 2016
     dat <- dat |>
-      filter(year %in% c(2015, 2016))
+      filter(year %in% c(2015, 2016)) # can remove this filter, but the lack of data for years past 2016 is ... unsatisfactory
 
     if (!is.null(country())) {
-      # if a country has been selected, add the selected_country col to highlight it later
+      # if a country has been selected, add the highlight_country col to highlight it later
       dat <- dat |>
         mutate(
           # add a col representing the selected country to highlight
-          highlight_country = if_else(Country == country(), "Y", "N") # this dngaf if country() is "" (the default), so no big deal
-        )
-    }
-
-    # only if the year slider has been changed, filter the dat further by the year slider criteria
-    if (year() != 0) {
-      dat <- dat |>
-        filter(
-          # filter down to the selected year
-          dat$year == year()
+          highlight_country = if_else(Country == country(), "Y", "N")
         )
     }
 
@@ -441,13 +466,228 @@ server <- function(input, output, session) {
       relocate(year, `Happiness Score`, Country, highlight_country, Region) |> # reorder the cols so they're easier for me to debug
       arrange(year, desc(`Happiness Score`)) # sorts by year, then by happiness score highest to lowest, ie. same as rank, but grouped (not really) by year ASC 2015-2022
 
-    return(dat) # should be the exact same as original df() if no filters have been selected. dat is a local copy of a modified reactive value
+    # only if the year slider has been changed, filter the dat frame further by the selected year
+    if (year() != 0) {
+      dat <- dat |>
+        filter(
+          # filter down to the selected year
+          dat$year == year()
+        )
+    }
+
+    # I considered adding a fct_reorder() call to resort the df by happiness score, but realized that I'll need that reorder for the world ranking and the scatter plot, bt I'll need to fct_reorder by country alphabetically for the select_country input, etc
+    return(dat) # should be the exact same as original df() if no filters have been selected.
   })
 
-  ## Update static elements ----
-  # are there even any static elements that need updating? I'm going crazy...
-
   ## Update dynamic elements  ----
+
+  ### Update various output variables ----
+  output$value_worldwide_mean_happiness_score <- renderValueBox({
+    req(happy_data())
+
+    mean <- mean(happy_data()$`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0("\\( \\mu \\) = ", round(mean, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Worldwide Mean Happiness Score",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_worldwide_median_happiness_score <- renderValueBox({
+    req(happy_data())
+
+    median <- median(happy_data()$`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0("\\( M \\) = ", round(median, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Worldwide Median Happiness Score",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_variance_worldwide_happiness_score <- renderValueBox({
+    req(happy_data())
+
+    var <- var(happy_data()$`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0("\\( \\sigma^2 \\) = ", round(var, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Variance of Worldwide Happiness Scores",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_std_dev_worldwide_happiness_score <- renderValueBox({
+    req(happy_data())
+
+    sd <- sd(happy_data()$`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0("\\( \\sigma \\) = ", round(sd, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Std Dev of Worldwide Happiness Scores",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_selected_country_happiness_score <- renderValueBox({
+    req(country())
+    req(happy_data())
+
+    score <- happy_data() |>
+      filter(Country == country()) |>
+      pull(`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0("\\( H \\) = ", round(score, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = paste0(country(), "'s Happiness Score"),
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_selected_country_happiness_rank <- renderValueBox({
+    req(country())
+    req(happy_data())
+
+    rank <- happy_data() |>
+      filter(Country == country()) |>
+      pull(`Happiness Rank`)
+
+    v <- renderUI(
+      paste0("Rank: ", rank)
+    )
+
+    valueBox(
+      value = v,
+      subtitle = paste0(country(), "'s Happiness Rank"),
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+  output$value_lowest_worldwide_happiness_score <- renderValueBox({
+    req(happy_data())
+    req(country())
+
+    low_score <- happy_data() |>
+      mutate(
+        Country = forcats::fct_reorder(
+          Country,
+          `Happiness Score`,
+          .na_rm = TRUE # remove na data
+        )
+      ) |>
+      head(1) |>
+      pull(`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0(country(), " has the lowest score at ", round(low_score, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Lowest Worldwide Happiness Score",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
+
+  output$value_highest_worldwide_happiness_score <- renderValueBox({
+    req(happy_data())
+    req(country())
+
+    high_score <- happy_data() |>
+      mutate(
+        Country = forcats::fct_reorder(
+          Country,
+          desc(`Happiness Score`),
+          .na_rm = TRUE # remove na data
+        )
+      ) |>
+      head(1) |>
+      pull(`Happiness Score`)
+
+    v <- renderUI(
+      withMathJax(
+        paste0(country(), " has the highest score at ", round(high_score, 6))
+      )
+    )
+
+    valueBox(
+      value = v,
+      subtitle = "Highest Worldwide Happiness Score",
+      icon = icon("bug"),
+      color = "success", # green
+      width = 3,
+      footer = "footer",
+      gradient = TRUE,
+      elevation = 5
+    )
+  })
 
   ### file upload onchange ----
   observeEvent(input$file_upload, {
@@ -584,9 +824,10 @@ server <- function(input, output, session) {
       action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
       options = list(
         title = paste0(
-          "Scatter Plot of: ",
+          "Scatter Plot of: '",
           factor(),
-          " ~ Happiness Score"
+          " ~ Happiness Score' for all recorded countries in ",
+          year()
         )
       )
     )
@@ -607,24 +848,16 @@ server <- function(input, output, session) {
     #browser()
     # pass through all countries, with the selected_country col, and order by happiness score DESC
 
-    # This doesn't fucking work...
-    # Warning: Error in mutate: ℹ In argument: `Country = forcats::fct_reorder(...)`.
-    # Caused by error in `lvls_reorder()`:
-    #   ! `idx` must contain one integer for each level of `f`
+    dat <- happy_data() |>
+      mutate(
+        Country = forcats::fct_reorder(
+          Country,
+          `Happiness Score`,
+          .na_rm = TRUE # remove na data
+        )
+      ) # this should sort the df by happiness score DESC
 
-    # a little messy, but it'll work for now
-
-    return(
-      happy_data() |>
-        mutate(
-          Country = forcats::fct_reorder(
-            Country,
-            `Happiness Score`,
-            .desc = TRUE, # desc order
-            .na_rm = TRUE # remove na data
-          )
-        ) # this should sort the df by happiness score DESC
-    )
+    return(dat)
   })
 
   ### Update world map plot ----
@@ -664,19 +897,30 @@ server <- function(input, output, session) {
         `Country` = forcats::fct_reorder(
           `Country`,
           `Happiness Score`,
-          #.desc = TRUE, # desc order
+          .desc = TRUE, # desc order # TODO WTF why won't you stick?
           .na_rm = TRUE # remove na data
+        ),
+        `Rank` = row_number(desc(`Happiness Score`)), # TODO find a way to have the y axis labeled not only by the country name, but by its rank
+        `Rank Country` = paste0(
+          str_pad(
+            paste0("Rank ", `Rank`),
+            10,
+            pad = " ",
+            side = "right"
+          ),
+          " ",
+          str_pad(Country, 25, pad = " ", side = "left")
         )
-      ) # this should sort the df by happiness score DESC
+      )
 
-    #browser() # to verify happy_data() is getting properly fct_reordered into sorted_happy_data
-
+    ### Making the world ranking have 25 rows in it ----
     # first, find the idx of the selected country()
     idx <- which(sorted_happy_data$Country == country())
 
     # Specify the number of rows before and after
     n_rows <- 12 # 12 before and after should return at maximum 25 rows, min 13 rows which we'll expand later
 
+    # max rows to display in the ranking plot
     max_rows <- 25
 
     # Calculate the start and end indices
@@ -764,26 +1008,57 @@ server <- function(input, output, session) {
           current_nrows
         )
       )
+    } else {
+      message("We already have our max_rows in the dataframe, moving on...")
     }
 
+    #browser()
     # TODO there has to be a better way to select from a df where a column value matches, and also return the previous n rows and next n rows, so that the selected country is in the middle of the ranked listing, while still taking into consideration the min and max indices for the set of rows
 
     # TODO add title, subtitle, etc to plot below:
+    # TODO consider adding country happiness rank to left of the country label on y axis, or perhaps (more advanced) look into a way to show the first x highest rows, a ... style skip, the selected country, another ... style skip and then the last x lowest rows, to get a better visualization where the chosen country fits in
+    # TODO sliced_happy_data is already sorted by happiness score desc... why the fuck is it plotting in ascending...
     sliced_happy_data |> # pass the sliced dataset
+      mutate(
+        # let's see if this works... WTF WHY DOES THIS NOT WORK KASDFF LKjsdf lkasdj flksdjf lksdf jlksdf jlaksdf jksd
+        `Country` = forcats::fct_reorder(
+          `Country`,
+          `Happiness Score`,
+          #.desc = TRUE, # desc order
+          .na_rm = TRUE # remove na data
+        )
+      ) |>
+      # arrange(desc(`Happiness Score`)) |> # doesn't give a fuck if I reordered factors before, or arrange them now, still showing in reverse order...
       ggplot(
         aes(
           x = `Happiness Score`,
-          y = Country,
+          y = `Rank Country`,
           fill = highlight_country
         )
       ) +
-      geom_col() +
+      geom_col(
+        #fill = "#0073C2"
+      ) +
+      geom_text(
+        aes(label = `Happiness Score`),
+        hjust = 0,
+        vjust = 0,
+        color = "black",
+        size = 5
+      ) +
       scale_x_continuous(
         labels = comma_format()
       ) +
+      theme_minimal(base_family = "Consolas") +
       theme(
         legend.position = "none"
       ) +
+      #   plot.title = element_text(family = "mono"), # Monospace title
+      #   axis.title.x = element_text(family = "mono"), # Monospace x-axis title
+      #   axis.title.y = element_text(family = "mono"), # Monospace x-axis title
+      #   axis.text.x = element_text(family = "mono"), # Monospace y-axis labels
+      #   axis.text.y = element_text(family = "mono") # Monospace y-axis labels
+      # ) +
       labs(
         y = NULL,
         x = "Happiness Score"
