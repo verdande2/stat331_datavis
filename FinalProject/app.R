@@ -17,6 +17,9 @@
 
 ## imports ----
 library(shiny)
+library(shinydashboard)
+library(shinydashboardPlus)
+library(shinyWidgets)
 library(plotly)
 library(ggplot2)
 library(dplyr)
@@ -26,6 +29,7 @@ library(DT)
 library(readr)
 library(scales)
 library(waiter)
+library(htmltools)
 library(rworldmap)
 library(rnaturalearth)
 library(rnaturalearthdata)
@@ -41,10 +45,45 @@ ui <- dashboardPage(
   ## Header ----
   header = dashboardHeader(
     title = "World Happiness Dashboard",
-    titleWidth = 400, # TODO figure out how this relates to sidebar width
+    titleWidth = "200px", # TODO figure out how this relates to sidebar width
     compact = TRUE,
     border = TRUE,
-    status = "purple"
+    status = "purple",
+    fixed = TRUE,
+    rightUi = tagList(
+      dropdownMenu(
+        icon = icon("tasks"),
+        type = "tasks",
+        badgeStatus = "primary",
+        taskItem(
+          # TODO see https://shiny.posit.co/r/components/display-messages/progress-bar/ for more info on how to update the progress on this taskItem
+          inputId = "report_progress",
+          value = 50,
+          color = "primary",
+          "Report Generating..."
+        )
+      )
+    ),
+    leftUi = tagList(
+      dropdownBlock(
+        id = "debug_dropdown",
+        title = "Debug",
+        icon = icon("bug"),
+        actionButton(
+          inputId = "browser",
+          label = "Open Debug Browser() Now!"
+        )
+        # prettyToggle( # TODO may cannabalize this for later use
+        #   inputId = "na",
+        #   label_on = "NAs kept",
+        #   label_off = "NAs removed",
+        #   icon_on = icon("check"),
+        #   icon_off = icon("trash-can")
+        # )
+      )
+    )
+
+    #tags$script("$('#browser').hide();") # default to hide the browser button, pffffft, gimme dev mode
   ),
 
   ## Sidebar ----
@@ -83,7 +122,7 @@ ui <- dashboardPage(
             sep = "", # remove comma delimited numbers
             ticks = TRUE
           ),
-          textOutput(outputId = "year_status", inline = TRUE),
+
           card_body(
             "Note: Data is incomplete for years beyond 2015 and 2016. Proceed at your own risk."
           ),
@@ -183,10 +222,13 @@ ui <- dashboardPage(
         fluidRow(
           ### DataTable output ----
           box(
-            title = "Data Table",
+            title = "Data Table of filtered subset of dataset",
             width = 12,
             collapsible = TRUE,
-            DTOutput(outputId = "DT_alldata", width = "100%") # TODO figure out how to adjust overflow settings
+            DTOutput(
+              outputId = "DT_filtered",
+              width = "100%" # TODO figure out how to adjust overflow settings
+            )
           )
         )
       ),
@@ -201,13 +243,89 @@ ui <- dashboardPage(
 
   ## Footer ----
   footer = dashboardFooter(
-    "STAT331 Data Visualization and Dashboards - Fall '25 - Professor Joseph Reid - Oregon Institute of Technology - Final Project - Andrew Sparkes",
+    right = "STAT331 Data Visualization and Dashboards - Fall '25 - Professor Joseph Reid - Oregon Institute of Technology - Final Project - Andrew Sparkes",
+    left = textOutput(outputId = "status", inline = TRUE),
     fixed = TRUE # stick to bottom of page
   )
 )
 
 ## Server Function Definition ----
 server <- function(input, output, session) {
+  ## Magic Debug Browser button handler
+  observeEvent(input$browser, {
+    browser()
+  })
+
+  ## Task management section ----
+
+  # helper function to add a new task to the task menu
+  # TODO this function does jack all, probably due to a dumb mistake in my css selector sequence
+  # potentially scan https://shiny.posit.co/r/components/inputs/task-button/ for more info?
+  add_task <- function(inputId, value, color, text) {
+    insertUI(
+      selector = "ul.navbar-right > li.nav-item > div.dropdown-menu-right > div.dropdown-divider", # Specific selector for the task list # TODO may need to update? This is probably wrong and that's my problem
+      where = "afterEnd",
+      # Wrap the taskItem in tags$li as required by the AdminLTE template structure
+      ui = tags$li(
+        taskItem(
+          inputId = inputId,
+          value = value,
+          color = color,
+          text = text
+        )
+      )
+    )
+  }
+
+  # example of new extended task, to be used for report generation later
+  # in the ui somewhere:
+  # input_task_button("button_fit", "Fit model")
+
+  # in the server somewhere
+  # fit <- ExtendedTask$new(function(predictors) {
+  #   future_promise({
+  #     # lengthy time operation here
+  #     formula <-
+  #       formula(paste0("log(price) ~ ", paste0(predictors, collapse = " + ")))
+  #
+  #     # do stuff
+  #   })
+  # }) |>
+  #   bind_task_button("button_fit")
+  #
+  # observeEvent(input$button_fit, {
+  #   fit$invoke(input$predictors)
+  # })
+
+  # for the above task stuff, see https://shiny.posit.co/r/articles/improve/nonblocking/
+
+  #browser()
+
+  # Logic to remove the most recently added task item
+  # TODO adapt this to remove a named inputId task, ie. after report finishes generating
+  # observeEvent(input$remove_task, {
+  #   # Check if there are dynamic tasks to remove
+  #   if (task_counter() > 1) {
+  #     last_id <- paste0("task_", task_counter() - 1)
+  #     removeUI(
+  #       selector = paste0("#", last_id),
+  #       multiple = FALSE
+  #     )
+  #   }
+  # })
+
+  # TODO possibly cannabalize this section to handle dynamically created/named tasks
+  # for (i in 1:task_counter()) {
+  #   observeEvent(!!sym(paste0("input$task_", task_counter())), {
+  #     showModal(
+  #       modalDialog(
+  #         title = paste0("Task ", i, " Clicked"),
+  #         paste0("You clicked task item ", i)
+  #       )
+  #     )
+  #   })
+  # }
+
   ## Handle file upload/default dataset load ----
   df <- reactive({
     # Keeping the full unmodified data frame in df
@@ -399,11 +517,11 @@ server <- function(input, output, session) {
       #freezeReactiveValue(input, "slider_year")
 
       if (!(year() %in% c(2015, 2016))) {
-        output$year_status <- renderText({
-          "You selected a year with incomplete data. Here be dragons. You've been warned..."
+        output$status <- renderText({
+          "You selected a year with incomplete data. Here be dragons. You've been warned!"
         })
       } else {
-        output$year_status <- renderText({
+        output$status <- renderText({
           ""
         })
       }
@@ -430,10 +548,10 @@ server <- function(input, output, session) {
           mapping = aes(
             x = !!sym(factor()), # black magic voodoo, but it works
             y = `Happiness Score`,
-            fill = highlight_country,
+            #fill = highlight_country, # TODO determine if I want fill, color or both for highlight country (and/or alpha below)
             color = highlight_country,
-            size = if_else(highlight_country == "Y", 2, 1.3) # double size for highlighted country
-            #alpha = if_else(highlight_country == "Y", 0.9, 0.8) # and more opaque maybe?
+            size = if_else(highlight_country == "Y", 2, 1.3) # these sizes don't make any fucking sense ... what units are these?
+            #alpha = if_else(highlight_country == "Y", 0.9, 0.8) # don't think this is needed
           )
         ) +
         guides(
@@ -457,6 +575,8 @@ server <- function(input, output, session) {
           )
       }
 
+      # TODO worth adding ggrepel labels? tbd
+
       return(plot)
     })
 
@@ -467,9 +587,9 @@ server <- function(input, output, session) {
       action = "update", # TODO figure out wtf is wrong with this. it updates the box title the first time, but then fails to update
       options = list(
         title = paste0(
-          "Scatter Plot of ",
+          "Scatter Plot of: ",
           factor(),
-          " and the resulting Happiness Score"
+          " ~ Happiness Score"
         )
       )
     )
@@ -479,34 +599,35 @@ server <- function(input, output, session) {
     # update anything else that doesn't depend on the value of select_factor. Should be nothing ...
   })
 
-  # TODO reconsider if I want to filter this based on selected country, selected year
-  # TODO sort the datatable by happiness rank
-  # TODO determine if this renderDT call needs to be somewhere else to be dynamically updated
   ### Update DataTable ----
-  output$DT_alldata <- renderDT({
-    message("Updating DataTable...")
+  output$DT_filtered <- renderDT({
+    message("Updating DataTable with filtered dataframe info...")
 
     req(year())
     req(country())
     req(happy_data())
 
+    #browser()
     # pass through all countries, with the selected_country col, and order by happiness score DESC
 
     # This doesn't fucking work...
     # Warning: Error in mutate: ℹ In argument: `Country = forcats::fct_reorder(...)`.
     # Caused by error in `lvls_reorder()`:
     #   ! `idx` must contain one integer for each level of `f`
-    # dat <- happy_data() |>
-    #   mutate(
-    #     Country = forcats::fct_reorder(
-    #       Country,
-    #       `Happiness Score`,
-    #       .desc = TRUE,
-    #       .na_rm = TRUE
-    #     )
-    #   ) # this should sort the df by happiness score DESC
 
-    return(happy_data()) # TODO change this back to return(dat) when I figure out WTF is up with the mutate/fct_reorder above
+    # a little messy, but it'll work for now
+
+    return(
+      happy_data() |>
+        mutate(
+          Country = forcats::fct_reorder(
+            Country,
+            `Happiness Score`,
+            .desc = TRUE, # desc order
+            .na_rm = TRUE # remove na data
+          )
+        ) # this should sort the df by happiness score DESC
+    )
 
     # Nor this ...
     # ordered_happy_data <- happy_data()[order(happy_data()$`Happiness Score`), ]
