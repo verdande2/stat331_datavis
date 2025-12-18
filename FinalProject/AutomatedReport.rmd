@@ -54,7 +54,7 @@ World ranking here
 Individual stats and happiness score/ranking infoboxes
 ```{r teststuff}
 # TODO figure out how to make these god damn valueboxes work to display the factors for the selected country
-
+# probably not the exact right thing, but https://mpn.metworx.com/packages/shinydashboard/0.7.1/reference/renderValueBox.html may shed some light. Perhaps render the boxes and pass the raw html to barf out in the rmd? Can the rmd take raw html? Shiny can, but can Rmd? I hope so...
 ```
 
 
