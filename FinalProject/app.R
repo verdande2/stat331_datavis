@@ -35,6 +35,10 @@ library(rnaturalearthdata)
 library(tinytex)
 library(stringr)
 library(bslib)
+library(sf)
+
+theme_set(theme_bw()) # default to b/w theme for ggplot2
+
 
 ## Global Variables ----
 #default_data_path <- "world_happiness_report.csv"
@@ -862,9 +866,17 @@ server <- function(input, output, session) {
 
   ### Update world map plot ----
   output$plot_map <- renderPlotly({
+    req(country())
     message("Updating World Map Plot...")
 
-    #world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
+    world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
+
+    ggplot(data = world) +
+      #geom_sf(mapping = aes(fill = ASDFASDFWDSFSDFSDF), color = "black", fill = "lightgreen") +
+      geom_sf(color = "black", fill = "lightgreen") +
+      xlab("Longitude") +
+      ylab("Latitude") +
+      ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
 
     # dataset_countries <- sort(unique(dat$Country))
     # world_data_countries <- sort(unique(world$name))
@@ -888,6 +900,8 @@ server <- function(input, output, session) {
     req(country())
     req(year())
     req(happy_data())
+
+    message("Updating world ranking list...")
 
     #browser() # to verify that the happy_data() coming in is already sorted and has highlight_country set => happy_data() is arranged, but not sorted by factor Happiness Score ... must use forcats::fct_reorder() and make it work
 
