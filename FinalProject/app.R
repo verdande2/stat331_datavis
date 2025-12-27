@@ -445,9 +445,29 @@ server <- function(input, output, session) {
 
     ### Mutate the data as needed ----
 
+    # a dict map of old (dataset) country names to new (world map data) country names
+    country_name_map <- c(
+      "Bosnia and Herzegovina" = "Bosnia and Herz.",
+      "Central African Republic" = "Central African Rep.",
+      "Congo (Brazzaville)" = "Dem. Rep. Congo",
+      "Congo (Kinshasa)" = "Dem. Rep. Congo",
+      "Czech Republic" = "Czechia",
+      "Dominican Republic" = "Dominican Rep.",
+      "Ivory Coast" = "Côte d'Ivoire",
+      "Macedonia" = "North Macedonia",
+      "North Cyprus" = "N. Cyprus",
+      "Palestinian Territories" = "Palestine",
+      "Somaliland region" = "Somaliland",
+      "Swaziland" = "eSwatini",
+      "United States" = "United States of America"
+    )
+
     # (ensure country names are in agreement between dataset and world map country names - standardized/normalized to best of ability
-    # dat <- dat |> # TODO fix the discrepancies. United States =/= United States of America, etc
-    #   rename()
+    dat <- dat |> # fix the discrepancies in the country name United States =/= United States of America, etc
+      mutate(
+        Country = str_replace_all(string = Country, pattern = country_name_map)
+      )
+
 
     dat <- dat |>
       select(-`...1`) # remove bullshit id/pk/whatever the hell this col was, artifact from read_csv TODO research why
@@ -871,27 +891,47 @@ server <- function(input, output, session) {
 
     world <- ne_countries(scale = "medium", returnclass = "sf") # static/const vector of country shape data, to be later joined with country happiness data
 
-    ggplot(data = world) +
-      #geom_sf(mapping = aes(fill = ASDFASDFWDSFSDFSDF), color = "black", fill = "lightgreen") +
-      geom_sf(color = "black", fill = "lightgreen") +
-      xlab("Longitude") +
-      ylab("Latitude") +
-      ggtitle("World map", subtitle = paste0("(", length(unique(world$NAME)), " countries)"))
 
-    # dataset_countries <- sort(unique(dat$Country))
-    # world_data_countries <- sort(unique(world$name))
+
+    #browser()
+
+    dataset_countries <- sort(unique(happy_data()$Country))
+    world_data_countries <- sort(unique(world$name))
+
+    #a <- setdiff(dataset_countries, world_data_countries) # most important one here, as this returns things in our dataset that are not in our world (sf geo) df
+
+    #b <- setdiff(world_data_countries, dataset_countries)
+
+    #browser()
+
+
 
     # TODO something in here is throwing a "Warning: Error in <Anonymous>: number of columns of matrices must match (see arg 15)"
     #browser()
-    # dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO verify the join by condition (col names match) THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
+    #dat <- left_join(happy_data(), world, by = c("Country" = "name")) # TODO THIS LOC IS FROM SATAN HIMSELF FUCK THIS CODE
+    dat <- left_join(world, happy_data(), by = c("name" = "Country"))
+
+
     # # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
-    #
+
     # # dat is the filtered happy_data, with world shape data joined on
     # dat |>
     #   ggplot() + # TODO issues with below geom_sf, complaining about geometry, tried passing geometry=geometry and it hated that too
     #   geom_sf(aes(fill = `Happiness Score`, geometry = geometry)) + #, alpha = highlight_country)) + # at this point, happy data should have the highlight_country col created
     #   scale_fill_gradient(low = "white", high = "blue") +
     #   guides(alpha = "none")
+
+#browser()
+    plot <- dat |>
+      ggplot() +
+      #geom_sf(mapping = aes(fill = ASDFASDFWDSFSDFSDF), color = "black", fill = "lightgreen") +
+      geom_sf(aes(geometry = geometry, fill = highlight_country), color = "black", fill = highlight_country) +
+      xlab("Longitude") +
+      ylab("Latitude") +
+      ggtitle("World map", subtitle = paste0("(", length(unique(world$name)), " countries)"))
+
+
+    return(plot)
   })
 
   ### Update World Ranking plot ----
