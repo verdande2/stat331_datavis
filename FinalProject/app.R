@@ -226,7 +226,7 @@ ui <- dashboardPage(
             plotlyOutput(
               outputId = "plot_map",
               width = "100%",
-              height = "400px"
+              height = "600px"
             )
           ),
 
@@ -914,7 +914,7 @@ server <- function(input, output, session) {
 
     # # the above join should take each record in happy_data(), match it's Country to the name in world, and join the shape/spatial data, then store back in dat to use later
 
-    # # dat is the filtered happy_data, with world shape data joined on
+    # # dat is the filtered happy_data bolted onto the world data
     # dat |>
     #   ggplot() + # TODO issues with below geom_sf, complaining about geometry, tried passing geometry=geometry and it hated that too
     #   geom_sf(aes(fill = `Happiness Score`, geometry = geometry)) + #, alpha = highlight_country)) + # at this point, happy data should have the highlight_country col created
@@ -925,7 +925,21 @@ server <- function(input, output, session) {
     plot <- dat |>
       ggplot() +
       #geom_sf(mapping = aes(fill = ASDFASDFWDSFSDFSDF), color = "black", fill = "lightgreen") +
-      geom_sf(aes(geometry = geometry, fill = highlight_country), color = "black", fill = highlight_country) +
+      geom_sf(
+        aes(
+          geometry = geometry,
+          fill = highlight_country
+          ),
+        color = "black",
+        fill = "lightgreen"
+        ) + # TODO figure this line out. fill based on highlight country but default to lightgreen
+      geom_sf(
+        aes( # trying to add a second geomsf layer to change fill on the highlighted country, this is working so far
+          geometry = geometry,
+          fill = highlight_country
+        ),
+        color = "black"
+      ) +
       xlab("Longitude") +
       ylab("Latitude") +
       ggtitle("World map", subtitle = paste0("(", length(unique(world$name)), " countries)"))
@@ -1078,7 +1092,7 @@ server <- function(input, output, session) {
         `Country` = forcats::fct_reorder(
           `Country`,
           `Happiness Score`,
-          #.desc = TRUE, # desc order
+          .desc = TRUE, # desc order
           .na_rm = TRUE # remove na data
         )
       ) |>
